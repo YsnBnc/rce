@@ -1,0 +1,4 @@
+/home/vulcan/Projects/rpc/CMakeFiles/host.dir
+/home/vulcan/Projects/rpc/CMakeFiles/client.dir
+/home/vulcan/Projects/rpc/CMakeFiles/edit_cache.dir
+/home/vulcan/Projects/rpc/CMakeFiles/rebuild_cache.dir
