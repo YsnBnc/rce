@@ -8,7 +8,6 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "Ws2_32.lib") // Links the winsock library
 #else
-
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -19,28 +18,37 @@ using namespace std;
 int main()
 {
     // creating socket
-    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    int hostSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-    // specifying address
+    // specifying the address
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(8080);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
-    // sending connection request
-    connect(clientSocket, (struct sockaddr*)&serverAddress,
-        sizeof(serverAddress));
+    // binding socket.
+    bind(hostSocket, (struct sockaddr*)&serverAddress,
+         sizeof(serverAddress));
 
+    // listening to the assigned socket
+    listen(hostSocket, 5);
+
+    // accepting connection request
+    int clientSocket= accept(hostSocket, nullptr, nullptr);
     // sending data
     while (true)
     {
-        string message;
-        cin >> message;
-        send(clientSocket, message.c_str(), message.size(), 0);
+        char buffer[1024] = { 0 };
+        recv(clientSocket, buffer, sizeof(buffer), 0);
+        cout << "Message from client: " << buffer << endl;
     }
 
     // closing socket
-    closesocket(clientSocket);
+    #ifdef _WIN32
+    closesocket(hostSocket);
+    #else
+    close(hostSocket);
+    #endif
 
     return 0;
 }

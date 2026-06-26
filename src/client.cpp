@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #endif
 
 using namespace std;
@@ -32,7 +33,7 @@ int main()
     if (clientSocket < 0) {
         cout << "Socket creation failed.\n";
         #ifdef _WIN32 aging WSACleanup(); 
-#endif
+        #endif
         return 1;
     }
 
@@ -42,18 +43,27 @@ int main()
     serverAddress.sin_port = htons(8080);
 
     // REPLACE THIS string with your actual Linux machine IP address
+    #ifdef _WIN32
     inet_pton(AF_INET, "192.168.0.26", &serverAddress.sin_addr);
+    #else
+    inet_pton(AF_INET, "192.168.0.12", &serverAddress.sin_addr);
+    #endif
 
     // 4. Sending connection request
     if (connect(clientSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
         cout << "Connection failed.\n";
+        #ifdef _WIN32
         closesocket(clientSocket);
-        #ifdef _WIN32 WSACleanup(); 
-#endif
+        #else
+        close(clientSocket);
+        #endif
+
+        #ifdef _WIN32 
+        WSACleanup(); 
+        #endif
         return 1;
     }
 
-    // ... your sending data while loop ...
     while (true)
     {
         string message;
@@ -61,7 +71,11 @@ int main()
         send(clientSocket, message.c_str(), message.size(), 0);
     }
 
+    #ifdef _WIN32
     closesocket(clientSocket);
+    #else
+    close(clientSocket);
+    #endif
 
 #ifdef _WIN32
     WSACleanup();

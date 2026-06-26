@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/vulcan/Projects/rpc/src/client.cpp" "CMakeFiles/client.dir/src/client.cpp.o" "gcc" "CMakeFiles/client.dir/src/client.cpp.o.d"
+  "/home/yb/Projects/rpc/src/client.cpp" "CMakeFiles/client.dir/src/client.cpp.o" "gcc" "CMakeFiles/client.dir/src/client.cpp.o.d"
   "" "client" "gcc" "CMakeFiles/client.dir/link.d"
   )
 

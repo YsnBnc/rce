@@ -1,7 +1,7 @@
 {
 	"InstallScripts" : 
 	[
-		"/home/vulcan/Projects/rpc/cmake_install.cmake"
+		"/home/yb/Projects/rpc/cmake_install.cmake"
 	],
 	"Parallel" : false
 }
