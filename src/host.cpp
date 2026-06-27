@@ -2,6 +2,8 @@
 #include <string>
 #include <iostream>
 
+#define PORT 9999
+
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -32,7 +34,7 @@ int main()
 
     //Create socket
     hostSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (hostSocket == 0) {
+    if (hostSocket < 0) {
         cerr << "socket failed." << endl;
         exit(EXIT_FAILURE);
     }
@@ -45,10 +47,10 @@ int main()
 #endif
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(8080);
+    address.sin_port = htons(PORT);
 
     //Bind
-    if (bind(hostSocket, (struct sockaddr *)&address, sizeof(address)) == 0) {
+    if (bind(hostSocket, (struct sockaddr *)&address, sizeof(address)) < 0) {
         cerr << "bind failed." << endl;
         exit(EXIT_FAILURE);
     }

@@ -2,7 +2,8 @@
 #include <string>
 #include <iostream>
 
-#define PORT 8080
+#define PORT 9999
+#define TARGET_IP "192.168.0.26"
 
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -24,6 +25,15 @@ int main()
   struct sockaddr_in server_address;
   const char *message = "Hello from client";
 
+#ifdef WIN32
+  WSADATA wsaData;
+  int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (wsaResult != 0) {
+    cerr << "WSAStartup() failed." << endl;
+    return 1;
+  }
+#endif
+
   //Create socket
   client_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (client_socket < 0) {
@@ -34,8 +44,18 @@ int main()
   server_address.sin_port = htons(PORT);
 
   //Convert IPv4 to IPv6
-  if(inet_pton(AF_INET, "127.0.0.1", &server_address.sin_addr) <= 0) {
+  if(inet_pton(AF_INET, TARGET_IP, &server_address.sin_addr) <= 0) {
     cerr << "Invalid address/ Address not supported \n";
+    exit(EXIT_FAILURE);
+  }
+
+  if (connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+#ifdef WIN32
+    WSACleanup();
+    cerr << "Connect failed with error code: " << WSAGetLastError() << endl;
+#else
+    cerr << "Connect failed with error code: " << strerror(errno) << endl;
+#endif
     exit(EXIT_FAILURE);
   }
 
@@ -44,7 +64,12 @@ int main()
   cout << "Message sent" << endl;
 
   //Close socket;
+#ifdef _WIN32
+  closesocket(client_socket);
+  WSACleanup();
+#else
   close(client_socket);
+#endif
   return 0;
 
 }
