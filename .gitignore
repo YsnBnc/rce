@@ -38,11 +38,14 @@
 *.out
 *.app
 *.exe
+client
+host
 
 # Build directories
 build/
 Build/
 build-*/
+out/
 
 # CMake generated files
 CMakeFiles/
@@ -51,6 +54,9 @@ cmake_install.cmake
 Makefile
 install_manifest.txt
 compile_commands.json
+cmake-build-debug/
+cmake-build-release/
+CMakeFiles/
 
 # Temporary files
 *.tmp
@@ -134,3 +140,8 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+#vscode
+/.vs/
+/.vscode/
+/.idea/
