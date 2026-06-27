@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/yb/Projects/rpc/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
