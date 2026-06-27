@@ -2,6 +2,8 @@
 #include <string>
 #include <iostream>
 
+#define PORT 8080
+
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
@@ -18,67 +20,31 @@ using namespace std;
 
 int main()
 {
-    #ifdef _WIN32
-    // 1. Initialize Winsock
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        cout << "Winsock initialization failed.\n";
-        return 1;
-    }
-    #endif
+  int client_socket = 0;
+  struct sockaddr_in server_address;
+  const char *message = "Hello from client";
 
-    // 2. Creating socket
-    // On Windows, sockets are UINT_PTR, but keeping 'int' works for basic setups
-    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientSocket < 0) {
-        cout << "Socket creation failed.\n";
-        #ifdef _WIN32 aging WSACleanup(); 
-        #endif
-        return 1;
-    }
+  //Create socket
+  client_socket = socket(AF_INET, SOCK_STREAM, 0);
+  if (client_socket < 0) {
+    cerr << "Error creating socket" << endl;
+    exit(EXIT_FAILURE);
+  }
+  server_address.sin_family = AF_INET;
+  server_address.sin_port = htons(PORT);
 
-    // 3. Specifying address
-    sockaddr_in serverAddress;
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(8080);
+  //Convert IPv4 to IPv6
+  if(inet_pton(AF_INET, "127.0.0.1", &server_address.sin_addr) <= 0) {
+    cerr << "Invalid address/ Address not supported \n";
+    exit(EXIT_FAILURE);
+  }
 
-    // REPLACE THIS string with your actual Linux machine IP address
-    #ifdef _WIN32
-    inet_pton(AF_INET, "192.168.0.26", &serverAddress.sin_addr);
-    #else
-    inet_pton(AF_INET, "192.168.0.12", &serverAddress.sin_addr);
-    #endif
+  //Send data
+  send(client_socket, message, strlen(message), 0);
+  cout << "Message sent" << endl;
 
-    // 4. Sending connection request
-    if (connect(clientSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        cout << "Connection failed.\n";
-        #ifdef _WIN32
-        closesocket(clientSocket);
-        #else
-        close(clientSocket);
-        #endif
+  //Close socket;
+  close(client_socket);
+  return 0;
 
-        #ifdef _WIN32 
-        WSACleanup(); 
-        #endif
-        return 1;
-    }
-
-    while (true)
-    {
-        string message;
-        cin >> message;
-        send(clientSocket, message.c_str(), message.size(), 0);
-    }
-
-    #ifdef _WIN32
-    closesocket(clientSocket);
-    #else
-    close(clientSocket);
-    #endif
-
-#ifdef _WIN32
-    WSACleanup();
-#endif
-    return 0;
 }
