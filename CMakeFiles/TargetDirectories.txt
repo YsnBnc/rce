@@ -1,4 +1,0 @@
-/home/yb/Projects/rpc/CMakeFiles/host.dir
-/home/yb/Projects/rpc/CMakeFiles/client.dir
-/home/yb/Projects/rpc/CMakeFiles/edit_cache.dir
-/home/yb/Projects/rpc/CMakeFiles/rebuild_cache.dir
