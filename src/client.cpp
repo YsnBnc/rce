@@ -23,6 +23,7 @@ int main()
 {
   int client_socket = 0;
   struct sockaddr_in server_address;
+  char buffer[1024] = {0};
   const char *message = "Hello from client";
 
 #ifdef WIN32
@@ -60,8 +61,22 @@ int main()
   }
 
   //Send data
-  send(client_socket, message, strlen(message), 0);
-  cout << "Message sent" << endl;
+  if (send(client_socket, message, strlen(message), 0) < 0) {
+    cerr << "Error sending message" << endl;
+    exit(EXIT_FAILURE);
+  }
+  else {
+    cout << "Message sent" << endl;
+  }
+
+  //Recieve answer
+  if (recv(client_socket, buffer, sizeof(buffer), 0) < 0) {
+    cerr << "Error receiving message" << endl;
+    exit(EXIT_FAILURE);
+  }
+  else {
+    cout << "Message from server: " << buffer << endl;
+  }
 
   //Close socket;
 #ifdef _WIN32

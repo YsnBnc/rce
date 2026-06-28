@@ -21,7 +21,8 @@ int main()
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    char buffer[1024];
+    char buffer[1024] = {0};
+    const char *answer = "Hello from server";
 
 #ifdef _WIN32
     WSAData wsaData;
@@ -75,6 +76,14 @@ int main()
     read(newSocket, buffer, sizeof(buffer), 0);
 #endif
     cout << "Message from client: " << buffer << endl;
+
+    if (send(newSocket, answer, strlen(answer), 0) < 0) {
+        cerr << "Error sending message" << endl;
+        exit(EXIT_FAILURE);
+    }
+    else {
+        cout << "Message sent" << endl;
+    }
 
 #ifdef _WIN32
     closesocket(newSocket);
