@@ -1,9 +1,10 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include "file_manager.h"
 
 #define PORT 9999
-#define TARGET_IP "192.168.0.26"
+#define TARGET_IP "192.168.0.23"
 
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -24,7 +25,12 @@ int main()
   int client_socket = 0;
   struct sockaddr_in server_address;
   char buffer[1024] = {0};
-  const char *message = "Hello from client";
+  //TODO Absolute path is quite bad
+  const string message = read_file("C:/Users/asuma/CLionProjects/rpc/src/test.py");
+  if (message.empty()) {
+    std::cerr << "Client failed to read file data." << std::endl;
+    return 1;
+  }
 
 #ifdef WIN32
   WSADATA wsaData;
@@ -61,12 +67,14 @@ int main()
   }
 
   //Send data
-  if (send(client_socket, message, strlen(message), 0) < 0) {
+  if (send(client_socket, message.c_str(), message.size(), 0) < 0) {
     cerr << "Error sending message" << endl;
     exit(EXIT_FAILURE);
   }
   else {
     cout << "Message sent" << endl;
+    cout << "DEBUG: Sending bytes: " << message << endl;
+    cout << "DEBUG: Sending bytes size: " << message.size() << endl;
   }
 
   //Recieve answer
