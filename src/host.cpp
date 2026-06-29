@@ -22,9 +22,7 @@ int main()
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    const char *answer = "Hello from server";
-
+    char buffer[2048] = {0};
 
 #ifdef _WIN32
     WSAData wsaData;
@@ -71,15 +69,18 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    //Read data
-#ifdef _WIN32
-    recv(newSocket, buffer, sizeof(buffer), 0);
-#else
-    read(newSocket, buffer, sizeof(buffer), 0);
-#endif
-    cout << "Message from client: " << buffer << endl;
+    //Read data and trigger compile phase
+    string answer;
+    int recieved_bytes = recv(newSocket, buffer, sizeof(buffer) -1, 0);
+    if (recieved_bytes > 0) {
+        buffer[recieved_bytes] = '\0';
+        cout << "Message from client:\n" << buffer << endl;
+        catch_file(buffer);
+        answer = compile_file("python3 new.py").c_str();
+        remove("new.py");
+    }
 
-    if (send(newSocket, answer, strlen(answer), 0) < 0) {
+    if (send(newSocket, answer.c_str(), answer.length(), 0) < 0) {
         cerr << "Error sending message" << endl;
         exit(EXIT_FAILURE);
     }

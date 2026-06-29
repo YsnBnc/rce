@@ -78,12 +78,15 @@ int main()
   }
 
   //Recieve answer
-  if (recv(client_socket, buffer, sizeof(buffer), 0) < 0) {
-    cerr << "Error receiving message" << endl;
-    exit(EXIT_FAILURE);
+  char answer_bytes[2048];
+  int recieved_bytes = recv(client_socket, buffer, sizeof(buffer), 0);
+  if (recieved_bytes > 0) {
+    answer_bytes[recieved_bytes] = '\0';
+    cout << "Message from server: " << buffer << endl;
   }
   else {
-    cout << "Message from server: " << buffer << endl;
+    cerr << "Error receiving message" << endl;
+    exit(EXIT_FAILURE);
   }
 
   //Close socket;

@@ -9,7 +9,9 @@ add_library(file_manager_lib STATIC
 )
 
 # Define your executables
-add_executable(host src/host.cpp)
+add_executable(host
+        src/host.cpp
+        src/file_manager.cpp)
 add_executable(client
         src/client.cpp
         src/file_manager.cpp)
