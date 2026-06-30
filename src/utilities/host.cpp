@@ -2,8 +2,7 @@
 #include <string>
 #include <iostream>
 #include "file_manager.h"
-
-#define PORT 9999
+#include "bridge.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -16,7 +15,7 @@
 
 using namespace std;
 
-int main()
+int server_side()
 {
     int hostSocket, newSocket;
     struct sockaddr_in address;
@@ -76,8 +75,8 @@ int main()
         buffer[recieved_bytes] = '\0';
         cout << "Message from client:\n" << buffer << endl;
         catch_file(buffer);
-        answer = compile_file("python3 new.py").c_str();
-        remove("new.py");
+        answer = compile_file(COMMAND).c_str();
+        remove("temp.py");
     }
 
     if (send(newSocket, answer.c_str(), answer.length(), 0) < 0) {

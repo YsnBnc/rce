@@ -16,11 +16,11 @@ string read_file(const string& file_name) {
 }
 
 void catch_file(const char *buffer) {
-    ofstream file_to_compile("new.py");
+    ofstream file_to_compile("temp.py");
     file_to_compile << buffer;
     file_to_compile.close();
 }
-//TODO Compile created file or change it something like pipe
+
 string compile_file(const string& command) {
     array<char, 1024> buffer;
     string output;

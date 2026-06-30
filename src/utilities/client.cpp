@@ -2,9 +2,7 @@
 #include <string>
 #include <iostream>
 #include "file_manager.h"
-
-#define PORT 9999
-#define TARGET_IP "192.168.0.23"
+#include "bridge.h"
 
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -20,13 +18,12 @@
 
 using namespace std;
 
-int main()
+int client_side()
 {
   int client_socket = 0;
   struct sockaddr_in server_address;
   char buffer[1024] = {0};
-  //TODO Absolute path is quite bad
-  const string message = read_file("C:/Users/asuma/CLionProjects/rpc/src/test.py");
+  const string message = read_file(PATH_TO_FILE); //TODO This wants absolute path
   if (message.empty()) {
     std::cerr << "Client failed to read file data." << std::endl;
     return 1;
