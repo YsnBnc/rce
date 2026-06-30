@@ -11,5 +11,6 @@ add_executable(RCE
         src/utilities/file_manager.cpp)
 
 if(WIN32)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++ -static")
     target_link_libraries(RCE ws2_32)
 endif()

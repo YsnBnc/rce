@@ -4,6 +4,7 @@ using namespace std;
 
 int PORT;
 char TARGET_IP[16];
+std::string COMMAND;
 std::string PATH_TO_FILE;
 
 int client() {
@@ -23,6 +24,7 @@ int server() {
     cout <<"Command you want to execute: ";
     cin >> COMMAND;
     cout <<"Server is executing...\n";
+    server_side();
     return 0;
 }
 
