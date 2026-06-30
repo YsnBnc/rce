@@ -1,22 +1,13 @@
 
 # RCE - Remote Code Execution
 
-RCE provides code execution in another machine then return the output to the original machine via network. Ideally the goal is executing resource-heavy codes in powerful machine where sent from relatively weak machine. Ultimate goal is making this project widely avaliable for all programming languages and securely transfering data between machines.
-
-## Installation
-
-1 - Clone the project.
-
-```bash
-  git clone https://github.com/YsnBnc/rce.git 
-```
-2 - Build it with CMake.
+This project is a Remote Code Execution framework designed to securely send and execute code on a remote server, returning the execution output to the client machine over a network connection. The primary goal is to offload the computational load to the server machine and then transmit the output back to the client machine.
+> **Caution:** By design, this application allows arbitrary code execution on the server host. It is strictly intended for controlled environments, private networks, or authorized remote task execution. Proper network access controls (like firewalls or VPNs) must be implemented to prevent unauthorized access.
 
 ## Usage
 
-After build. Run the program and select a side. After the application the output will send to the client.
 ### Server Side
-This selection will require **port** and **command to execute**. This command will be executed server machine and will return the output to the client.
+This mode requires specifying a **port** and the **command to execute**. The command runs on the server machine, and the stdout/stderr output is sent back to the client."
 ### Client Side
-This selection will require **port**,**Target-IP** and **File Path** to compile selected file on the server.
->***Warning:*** For Windows, file path should be absolute path.
+This mode requires specifying the **port**, **target IP**, and the **local file path** to compile or execute on the server.
+>***Warning:*** Windows users must provide an absolute file path.
