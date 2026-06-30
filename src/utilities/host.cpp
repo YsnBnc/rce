@@ -75,7 +75,8 @@ int server_side()
         buffer[recieved_bytes] = '\0';
         cout << "Message from client:\n" << buffer << endl;
         catch_file(buffer);
-        answer = compile_file(COMMAND).c_str();
+        cout << COMMAND << endl;
+        answer = compile_file(COMMAND);
         remove("temp.py");
     }
 

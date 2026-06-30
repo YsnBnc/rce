@@ -1,4 +1,6 @@
 #include <iostream>
+#include <limits>
+
 #include "utilities/bridge.h"
 using namespace std;
 
@@ -21,8 +23,9 @@ int client() {
 int server() {
     cout << "Port: ";
     cin >> PORT;
-    cout <<"Command you want to execute: ";
-    cin >> COMMAND;
+    cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+    cout << "Command you want to execute: ";
+    std::getline(cin, COMMAND);
     cout <<"Server is executing...\n";
     server_side();
     return 0;
