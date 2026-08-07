@@ -29,7 +29,7 @@ public:
 
     RCE_Frame():wxFrame(nullptr, wxID_ANY, "Remote Code Execution", wxDefaultPosition)
     {
-        wxSize fixedSize(800, 600); //Lock the window size
+        wxSize fixedSize(700, 400); //Lock the window size
         SetMinSize(fixedSize);
         SetMaxSize(fixedSize);
 
@@ -58,6 +58,10 @@ private:
     wxSimplebook* m_book = nullptr;
     wxPanel* serverPanel = nullptr;
     wxPanel* clientPanel = nullptr;
+    wxTextCtrl* ipInput = nullptr;
+    wxTextCtrl* portInput = nullptr;
+    wxButton *browseBtn = nullptr;
+    wxButton *executeBtn = nullptr;
 
     void onButtonClicked(wxCommandEvent& event) {
         wxMessageBox("Hello world from wxWidgets!", "", wxOK | wxICON_INFORMATION);
@@ -65,8 +69,37 @@ private:
 
     void initServerPanel() {
         serverPanel = new wxPanel(m_book);
-        new wxStaticText(serverPanel, wxID_ANY, "Server Side", wxPoint(100,70), wxSize(150,100));
+
+        new wxStaticText(serverPanel, ID_SERVER_SIDE, "PORT:", wxPoint(20,20), wxSize(35,15));
+        new wxStaticText(serverPanel, ID_SERVER_SIDE, "SERVER IP:",wxPoint(20,60), wxSize(63,15));
+
+        browseBtn = new wxButton(serverPanel, ID_SERVER_SIDE, wxString("BROWSE"), wxPoint(20,100), wxSize(80,20));
+        executeBtn = new wxButton(serverPanel, ID_SERVER_SIDE, wxString("EXECUTE"), wxPoint(20,140), wxSize(80,20));
+
+        browseBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onBrowseClicked, this);
+        executeBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onServerExecuteClicked, this);
+
+        //TODO: These must have clamp of some sort
+        portInput = new wxTextCtrl(serverPanel, ID_SERVER_SIDE, "",wxPoint(60,20), wxSize(50,20));
+        ipInput = new wxTextCtrl(serverPanel, ID_SERVER_SIDE, "",wxPoint(86,60), wxSize(90,20));
+
         m_book->AddPage(serverPanel,"Server Side", true);
+    }
+    void onBrowseClicked(wxCommandEvent& event) {
+        wxMessageBox("Server Button clicked", "Info", wxOK | wxICON_INFORMATION);
+    }
+    void onServerExecuteClicked(wxCommandEvent& event) {
+        long temp = 0;
+        wxString ip = ipInput->GetValue();
+        wxString port = portInput->GetValue();
+
+        snprintf(TARGET_IP, sizeof(TARGET_IP), "%s", (const char*) ip.mb_str());
+        if (port.ToLong(&temp)) {
+            PORT = static_cast<int>(temp);
+        }
+        wxLogMessage("Set PORT: %d, TARGET_IP: %s", PORT, TARGET_IP);
+        server_side();
+        SetStatusText("Server is ready");
     }
     void initClientPanel() {
         clientPanel = new wxPanel(m_book);
