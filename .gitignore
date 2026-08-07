@@ -62,6 +62,7 @@ CMakeFiles/
 
 # vcpkg
 vcpkg_installed/
+include/
 
 # debug information files
 *.dwo
