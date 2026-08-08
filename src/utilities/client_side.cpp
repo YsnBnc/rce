@@ -3,6 +3,7 @@
 #include <iostream>
 #include "file_manager.h"
 #include "bridge.h"
+#include <wx/wx.h>
 
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -18,7 +19,7 @@
 
 using namespace std;
 
-int client_side()
+int client_side(int PORT, char TARGET_IP[16])
 {
   int client_socket = 0;
   struct sockaddr_in server_address;

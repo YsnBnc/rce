@@ -1,4 +1,5 @@
 #include <cstring>
+#include <io.h>
 #include <string>
 #include <iostream>
 #include "file_manager.h"
@@ -13,21 +14,20 @@
 #include <unistd.h>
 #endif
 
-using namespace std;
 
-int server_side()
+int server_side(int PORT)
 {
     int hostSocket, newSocket;
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
     char buffer[2048] = {0};
-
+    std::cout << "Server starting";
 #ifdef _WIN32
-    WSAData wsaData;
+    WSAData wsaData{};
     int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (wsaResult != 0) {
-        cerr << "WSAStartup() failed." << endl;
+        std::cerr << "WSAStartup() failed." << std::endl;
         return 1;
     }
 #endif
@@ -35,8 +35,10 @@ int server_side()
     //Create socket
     hostSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (hostSocket < 0) {
-        cerr << "socket failed." << endl;
+        std::cerr << "socket failed." << std::endl;
         exit(EXIT_FAILURE);
+    }else {
+        std::cout << "Socket created" << std::endl;
     }
 
     //Assign socket to a port
@@ -51,41 +53,41 @@ int server_side()
 
     //Bind
     if (bind(hostSocket, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        cerr << "bind failed." << endl;
+        std::cerr << "bind failed." << std::endl;
         exit(EXIT_FAILURE);
-    }
+    }else{std::cerr << "bind successful." << std::endl;}
 
     //Listen
     if (listen(hostSocket, 10) < 0) {
-        cerr << "listen failed." << endl;
+        std::cerr << "listen failed." << std::endl;
         exit(EXIT_FAILURE);
-    }
+    }else{std::cout << "Listening for connections..." << std::endl;}
 
     //Accept connections
     newSocket = accept(hostSocket, (struct sockaddr *)&address, (socklen_t *)&addrlen);
     if (newSocket < 0) {
-        cerr << "accept failed." << endl;
+        std::cerr << "accept failed." << std::endl;
         exit(EXIT_FAILURE);
-    }
+    }else{std::cout << "New connection established" << std::endl;}
 
     //Read data and trigger compile phase
-    string answer;
+    std::string answer;
     int recieved_bytes = recv(newSocket, buffer, sizeof(buffer) -1, 0);
     if (recieved_bytes > 0) {
         buffer[recieved_bytes] = '\0';
-        cout << "Message from client:\n" << buffer << endl;
+        std::cout << "Message from client:\n" << buffer << std::endl;
         catch_file(buffer);
-        cout << COMMAND << endl;
+        std::cout << COMMAND << std::endl;
         answer = compile_file(COMMAND);
         remove("temp.py");
     }
 
     if (send(newSocket, answer.c_str(), answer.length(), 0) < 0) {
-        cerr << "Error sending message" << endl;
+        std::cerr << "Error sending message" << std::endl;
         exit(EXIT_FAILURE);
     }
     else {
-        cout << "Message sent" << endl;
+        std::cout << "Message sent" << std::endl;
     }
 
 #ifdef _WIN32
