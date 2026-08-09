@@ -3,7 +3,6 @@
 #include <sstream>
 #include <fstream>
 #include <array>
-#include <cstdlib>
 #include "file_manager.h"
 using namespace std;
 

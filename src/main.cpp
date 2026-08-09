@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iostream>
 #include <thread>
 #include <wx/simplebook.h>
@@ -105,6 +106,7 @@ private:
     wxButton *clt_executeBtn = nullptr;
     std::streambuf* oldCoutBuffer = nullptr;
     std::streambuf* oldCerrBuffer = nullptr;
+    OPENFILENAME file_to_open;
 
     void initServerPanel() {
         serverPanel = new wxPanel(m_book);
@@ -143,7 +145,22 @@ private:
         SetStatusText("Client Side View");
     }
     void onBrowseClicked(wxCommandEvent& event) {
-        wxMessageBox("Server Button clicked", "Info", wxOK | wxICON_INFORMATION);
+        file_to_open = {0};
+        WCHAR fileBuffer[MAX_PATH] = L"";
+        std::wstring path;
+
+        file_to_open.lStructSize = sizeof(file_to_open);
+        file_to_open.lpstrFile = fileBuffer;
+        file_to_open.nMaxFile = MAX_PATH;
+        file_to_open.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+
+        if (GetOpenFileNameW(&file_to_open)) {
+            path.assign(fileBuffer);
+            std::filesystem::path p(path);
+            std::string narrowPath = p.string();
+            PATH_TO_FILE = narrowPath;
+            std::cout <<"Selected file: " + narrowPath << std::endl;
+        }
     }
     void onClientExecuteClicked(wxCommandEvent& event) {
         long temp = 0;
