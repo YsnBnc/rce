@@ -1,5 +1,4 @@
 #include <cstring>
-#include <io.h>
 #include <string>
 #include <iostream>
 #include "file_manager.h"

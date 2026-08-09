@@ -51,6 +51,7 @@ public:
 };
 
 wxIMPLEMENT_APP(RCE_App);
+
 class RCE_Frame : public wxFrame
 {
 public:
@@ -106,7 +107,12 @@ private:
     wxButton *clt_executeBtn = nullptr;
     std::streambuf* oldCoutBuffer = nullptr;
     std::streambuf* oldCerrBuffer = nullptr;
+#ifdef _WIN32
     OPENFILENAME file_to_open;
+#else __linux__
+
+#endif
+
 
     void initServerPanel() {
         serverPanel = new wxPanel(m_book);
@@ -145,6 +151,7 @@ private:
         SetStatusText("Client Side View");
     }
     void onBrowseClicked(wxCommandEvent& event) {
+#ifdef _WIN32
         file_to_open = {0};
         WCHAR fileBuffer[MAX_PATH] = L"";
         std::wstring path;
@@ -161,6 +168,22 @@ private:
             PATH_TO_FILE = narrowPath;
             std::cout <<"Selected file: " + narrowPath << std::endl;
         }
+#else
+
+        wxFileDialog openFileDialog(
+            this,
+            "Select a file to open",
+            "",
+            "",
+            "All files (*.*)|*.*",
+            wxFD_OPEN | wxFD_FILE_MUST_EXIST
+            );
+        if (openFileDialog.ShowModal() == wxID_OK) {
+            std::string narrowPath = openFileDialog.GetPath().ToStdString();
+            PATH_TO_FILE = narrowPath;
+            std::cout <<"Selected file: " + narrowPath << std::endl;
+        }
+#endif
     }
     void onClientExecuteClicked(wxCommandEvent& event) {
         long temp = 0;
