@@ -26,7 +26,9 @@ protected:
         if (_c != EOF) {
             char ch = static_cast<char>(_c);
             for (auto* ctrl : m_targets) {
+                wxTheApp->CallAfter([ctrl, ch]() {
                 ctrl->AppendText(ch);
+            });
             }
         }
         return _c;
