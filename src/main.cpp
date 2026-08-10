@@ -36,7 +36,9 @@ protected:
      std::streamsize xsputn(const char* _s, std::streamsize _n) override {
         wxString text(_s, _n);
         for (auto* ctrl : m_targets) {
-            ctrl->AppendText(text);
+            wxTheApp->CallAfter([ctrl, text]() {
+                ctrl->AppendText(text);
+            });
         }
         return _n;
     }
