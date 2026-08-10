@@ -3,6 +3,7 @@ project(RCE VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/release")
 add_executable(RCE
         src/main.cpp
         src/utilities/client_side.cpp
@@ -12,8 +13,8 @@ add_executable(RCE
 
 find_package(wxWidgets CONFIG REQUIRED)
 target_link_libraries(RCE PRIVATE wx::wxbase wx::wxcore)
-
 if(WIN32)
+    set_target_properties(RCE PROPERTIES WIN32_EXECUTABLE TRUE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++ -static")
     target_link_libraries(RCE PRIVATE ws2_32)
 endif()

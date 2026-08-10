@@ -1,7 +1,6 @@
 #include <cstring>
 #include <string>
 #include <iostream>
-#include "file_manager.h"
 #include "bridge.h"
 #include <wx/wx.h>
 
@@ -43,7 +42,6 @@ int client_side(int PORT, char TARGET_IP[16])
   client_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (client_socket < 0) {
     cerr << "Error creating socket" << endl;
-    exit(EXIT_FAILURE);
   }
   server_address.sin_family = AF_INET;
   server_address.sin_port = htons(PORT);
@@ -51,7 +49,6 @@ int client_side(int PORT, char TARGET_IP[16])
   //Convert IPv4 to IPv6
   if(inet_pton(AF_INET, TARGET_IP, &server_address.sin_addr) <= 0) {
     cerr << "Invalid address/ Address not supported \n";
-    exit(EXIT_FAILURE);
   }
 
   if (connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
@@ -61,18 +58,14 @@ int client_side(int PORT, char TARGET_IP[16])
 #else
     cerr << "Connect failed with error code: " << strerror(errno) << endl;
 #endif
-    exit(EXIT_FAILURE);
   }
 
   //Send data
   if (send(client_socket, message.c_str(), message.size(), 0) < 0) {
-    cerr << "Error sending message" << endl;
-    exit(EXIT_FAILURE);
+    cerr << "Error sending request" << endl;
   }
   else {
-    cout << "Message sent" << endl;
-    cout << "DEBUG: Sending bytes: " << message << endl;
-    cout << "DEBUG: Sending bytes size: " << message.size() << endl;
+    cout << "Request sent" << endl;
   }
 
   //Recieve answer
@@ -80,11 +73,10 @@ int client_side(int PORT, char TARGET_IP[16])
   int recieved_bytes = recv(client_socket, buffer, sizeof(buffer), 0);
   if (recieved_bytes > 0) {
     answer_bytes[recieved_bytes] = '\0';
-    cout << "Message from server: " << buffer << endl;
+    cout << "Answer from server: " << buffer << endl;
   }
   else {
-    cerr << "Error receiving message" << endl;
-    exit(EXIT_FAILURE);
+    cerr << "Error receiving answer" << endl;
   }
 
   //Close socket;

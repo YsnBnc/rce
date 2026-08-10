@@ -14,34 +14,34 @@ std::string PATH_TO_FILE;
 
 class TerminalOutputCatch : public std::streambuf  {
 public:
-    explicit TerminalOutputCatch(wxTextCtrl* ctrl) : m_ctrl(ctrl){}
-protected:
-    //Single character output
-    int_type overflow(int_type __c) override {
-        if (__c != EOF) {
-            char ch = static_cast<char>(__c);
-            wxTheApp->CallAfter([this, ch]() {
-               if (m_ctrl) {
-                   m_ctrl->AppendText(wxString(ch));
-                   m_ctrl->ShowPosition(m_ctrl->GetLastPosition());
-               }
-            });
-        }
-        return __c;
+    explicit TerminalOutputCatch(wxTextCtrl* initialTarget = nullptr) {
+        if (initialTarget) m_targets.push_back(initialTarget);
     }
-    //String or buffer output
-    std::streamsize xsputn(const char_type* __s, std::streamsize __n) override {
-        wxString str(__s, __n);
-        wxTheApp->CallAfter([this, str]() {
-            if (m_ctrl) {
-                m_ctrl->AppendText(str);
-                m_ctrl->ShowPosition(m_ctrl->GetLastPosition());
+    void AddTarget(wxTextCtrl* target) {
+        if (target) m_targets.push_back(target);
+    }
+protected:
+    // Single character output
+     int_type overflow(int_type _c) override {
+        if (_c != EOF) {
+            char ch = static_cast<char>(_c);
+            for (auto* ctrl : m_targets) {
+                ctrl->AppendText(ch);
             }
-        });
-        return __n;
+        }
+        return _c;
+    }
+
+    // String/buffer output
+     std::streamsize xsputn(const char* _s, std::streamsize _n) override {
+        wxString text(_s, _n);
+        for (auto* ctrl : m_targets) {
+            ctrl->AppendText(text);
+        }
+        return _n;
     }
 private:
-    wxTextCtrl* m_ctrl;
+    std::vector<wxTextCtrl*> m_targets;
 };
 
 class RCE_App : public wxApp
@@ -88,7 +88,7 @@ public:
         Bind(wxEVT_MENU, &RCE_Frame::OnClientSide, this, ID_CLIENT_SIDE);
     }
 
-    ~RCE_Frame() {
+    ~RCE_Frame() override {
         std::cout.rdbuf(oldCoutBuffer);
         std::cerr.rdbuf(oldCerrBuffer);
         delete streamBuffer;
@@ -99,7 +99,9 @@ private:
     wxPanel* serverPanel = nullptr;
     wxPanel* clientPanel = nullptr;
     wxTextCtrl* ipInput = nullptr;
-    wxTextCtrl* portInput = nullptr;
+    wxTextCtrl* client_portInput = nullptr;
+    wxTextCtrl* server_portInput = nullptr;
+    wxTextCtrl* commandInput = nullptr;
     wxTextCtrl* terminalOutput = nullptr;
     TerminalOutputCatch* streamBuffer = nullptr;
     wxButton *browseBtn = nullptr;
@@ -108,7 +110,7 @@ private:
     std::streambuf* oldCoutBuffer = nullptr;
     std::streambuf* oldCerrBuffer = nullptr;
 #ifdef _WIN32
-    OPENFILENAME file_to_open;
+    OPENFILENAME file_to_open{};
 #else __linux__
 
 #endif
@@ -117,7 +119,9 @@ private:
     void initServerPanel() {
         serverPanel = new wxPanel(m_book);
         new wxStaticText(serverPanel, ID_SERVER_SIDE, "PORT:", wxPoint(20,20), wxSize(35,15));
-        portInput = new wxTextCtrl(serverPanel, ID_SERVER_SIDE, "",wxPoint(60,20), wxSize(50,20));
+        new wxStaticText(serverPanel, ID_SERVER_SIDE, "COMMAND", wxPoint(20,50), wxSize(65,15));
+        server_portInput = new wxTextCtrl(serverPanel, ID_SERVER_SIDE, "",wxPoint(60,20), wxSize(50,20));
+        commandInput = new wxTextCtrl(serverPanel, ID_SERVER_SIDE, "",wxPoint(20,70), wxSize(155,40));
 
         clt_executeBtn = new wxButton(serverPanel, ID_SERVER_SIDE, wxString("EXECUTE"), wxPoint(20,140), wxSize(80,20));
         clt_executeBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onServerExecuteClicked, this);
@@ -137,7 +141,7 @@ private:
         srv_executeBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onClientExecuteClicked, this);
 
         //TODO: These must have clamp of some sort
-        portInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",wxPoint(60,20), wxSize(50,20));
+        client_portInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",wxPoint(60,20), wxSize(50,20));
         ipInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",wxPoint(86,60), wxSize(90,20));
         terminalCatch(clientPanel, ID_CLIENT_SIDE);
         m_book->AddPage(clientPanel,"Client Side", true);
@@ -169,7 +173,6 @@ private:
             std::cout <<"Selected file: " + narrowPath << std::endl;
         }
 #else
-
         wxFileDialog openFileDialog(
             this,
             "Select a file to open",
@@ -188,7 +191,7 @@ private:
     void onClientExecuteClicked(wxCommandEvent& event) {
         long temp = 0;
         wxString ip = ipInput->GetValue();
-        wxString port = portInput->GetValue();
+        wxString port = client_portInput->GetValue();
 
         snprintf(TARGET_IP, sizeof(TARGET_IP), "%s", (const char*) ip.mb_str());
         if (port.ToLong(&temp)) {
@@ -196,30 +199,37 @@ private:
         }
         std::thread([this]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(800));
+            std::cout << "Client Side started on " << TARGET_IP <<":"<<PORT << std::endl;
             client_side(PORT,TARGET_IP);
         }).detach();
     }
     void onServerExecuteClicked(wxCommandEvent& event) {
         long temp = 0;
-        wxString port = portInput->GetValue();
+        wxString port = server_portInput->GetValue();
         if (port.ToLong(&temp)) {
             PORT = static_cast<int>(temp);
         }
+        COMMAND = commandInput->GetValue();
         std::thread([this]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(800));
-            std::cout << "Server Side Started" << std::endl;
-            server_side(PORT);
+            std::cout << "Server Side Started on port " << PORT << std::endl;
+            server_side(PORT, COMMAND);
         }).detach();
     }
-    void terminalCatch(wxPanel* panel, wxWindowID ID) {
+    void terminalCatch(wxWindow* panel, wxWindowID ID) {
         terminalOutput = new wxTextCtrl(panel, ID, "", wxPoint(180,15), wxSize(490,300),wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2);
         terminalOutput->SetForegroundColour(wxColour(54, 69, 79));
         terminalOutput->SetFont(wxFontInfo(10).Family(wxFONTFAMILY_TELETYPE));
 
         //Redirect cout and cerr stream buffers
-        streamBuffer = new TerminalOutputCatch(terminalOutput);
-        oldCoutBuffer = std::cout.rdbuf(streamBuffer);
-        oldCerrBuffer = std::cerr.rdbuf(streamBuffer);
+        if (!streamBuffer) {
+            streamBuffer = new TerminalOutputCatch(terminalOutput);
+            oldCoutBuffer = std::cout.rdbuf(streamBuffer);
+            oldCerrBuffer = std::cerr.rdbuf(streamBuffer);
+        }
+        else {
+            streamBuffer->AddTarget(terminalOutput);
+        }
     }
 };
 
