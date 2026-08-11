@@ -5,8 +5,6 @@
 #include <array>
 #include "bridge.h"
 
-std::string FILENAME;
-
 std::string read_file(const std::string& file_name) {
     std::cout << "Reading file" << std::endl;
     std::ifstream ifs(file_name);
@@ -18,7 +16,7 @@ std::string read_file(const std::string& file_name) {
 
 void catch_file(const char *buffer) {
     std::cout << "Catching file" << std::endl;
-    std::ofstream file_to_compile(FILENAME);
+    std::ofstream file_to_compile("temp.py");
     file_to_compile << buffer;
     file_to_compile.close();
 }
@@ -40,9 +38,8 @@ std::string compile_file(const std::string& command) {
     while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
         output += buffer.data();
     }
-
-#ifdef WIN32
     std::cout << "File compiled" << std::endl;
+#ifdef WIN32
     _pclose(pipe);
 #else
     pclose(pipe);

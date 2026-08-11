@@ -11,6 +11,7 @@ int PORT;
 char TARGET_IP[16];
 std::string COMMAND;
 std::string PATH_TO_FILE;
+//std::string FILENAME;
 
 class TerminalOutputCatch : public std::streambuf  {
 public:
@@ -27,8 +28,8 @@ protected:
             char ch = static_cast<char>(_c);
             for (auto* ctrl : m_targets) {
                 wxTheApp->CallAfter([ctrl, ch]() {
-                ctrl->AppendText(ch);
-            });
+                    ctrl->AppendText(ch);
+                });
             }
         }
         return _c;
@@ -64,7 +65,6 @@ public:
         ID_SERVER_SIDE = 1001,
         ID_CLIENT_SIDE = 1002,
     };
-
     RCE_Frame():wxFrame(nullptr, wxID_ANY, "Remote Code Execution", wxDefaultPosition)
     {
         wxSize fixedSize(700, 400); //Lock the window size
@@ -119,7 +119,6 @@ private:
 
 #endif
 
-
     void initServerPanel() {
         serverPanel = new wxPanel(m_book);
         new wxStaticText(serverPanel, ID_SERVER_SIDE, "PORT:", wxPoint(20,20), wxSize(35,15));
@@ -172,6 +171,7 @@ private:
         if (GetOpenFileNameW(&file_to_open)) {
             path.assign(fileBuffer);
             std::filesystem::path p(path);
+            //FILENAME = p.filename().string();
             std::string narrowPath = p.string();
             PATH_TO_FILE = narrowPath;
             std::cout <<"Selected file: " + narrowPath << std::endl;

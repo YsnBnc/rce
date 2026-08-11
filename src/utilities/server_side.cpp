@@ -19,6 +19,7 @@ int server_side(int PORT, std::string COMMAND)
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
+    //char filenameBuffer[256];
     char buffer[2048] = {0};
     std::cout << "Server starting...";
 #ifdef _WIN32
@@ -66,6 +67,10 @@ int server_side(int PORT, std::string COMMAND)
     }else{std::cout << "Connection established." << std::endl;}
 
     //Read data and trigger compile phase
+    // int filename_bytes = recv(newSocket, filenameBuffer, sizeof(filenameBuffer)-1,0);//
+    // if (filename_bytes > 0) {
+    //     filenameBuffer[filename_bytes] = '\0';
+    // }
     std::string answer;
     int recieved_bytes = recv(newSocket, buffer, sizeof(buffer) -1, 0);
     if (recieved_bytes > 0) {
@@ -75,7 +80,10 @@ int server_side(int PORT, std::string COMMAND)
         catch_file(buffer);
         std::cout << COMMAND << std::endl;
         answer = compile_file(COMMAND);
-        remove(FILENAME.c_str());
+        remove("temp.py");
+    }
+    else {
+        std::cerr << "Problem on receiving file." << std::endl;
     }
 
     if (send(newSocket, answer.c_str(), answer.length(), 0) < 0) {
