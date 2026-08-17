@@ -1,9 +1,13 @@
 #include "bridge.h"
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <vector>
 #include <wx/wx.h>
 
 #ifdef _WIN32
@@ -17,15 +21,27 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #endif
-
 using namespace std;
 
-int client_side(int PORT, char TARGET_IP[16]) {
+bool send_exact(int fd, const void *data, size_t size) {
+  size_t sent = 0;
+  const auto *ptr = static_cast<const uint8_t *>(data);
+  while (sent < size) {
+    ssize_t res = send(fd, ptr + sent, size - sent, 0);
+    if (res <= 0)
+      return false; // Socket error
+    sent += res;
+  }
+  return true;
+}
+
+int client_class::client_side(int PORT_CS, char TARGET_IP_CS[16],
+                              std::string COMPILE_COMMAND_CS) {
   string MESSAGE;
   int client_socket = 0;
   struct sockaddr_in server_address;
   char buffer[1460] = {0};
-  const string file_content =
+  string file_content =
       read_file(PATH_TO_FILE); // TODO This wants absolute path
   if (file_content.empty()) {
     std::cerr << "Client failed to read file data." << std::endl;
@@ -47,10 +63,10 @@ int client_side(int PORT, char TARGET_IP[16]) {
     cerr << "Error creating socket" << endl;
   }
   server_address.sin_family = AF_INET;
-  server_address.sin_port = htons(PORT);
+  server_address.sin_port = htons(PORT_CS);
 
   // Convert IPv4 to IPv6
-  if (inet_pton(AF_INET, TARGET_IP, &server_address.sin_addr) <= 0) {
+  if (inet_pton(AF_INET, TARGET_IP_CS, &server_address.sin_addr) <= 0) {
     cerr << "Invalid address/ Address not supported \n";
   }
 
@@ -65,30 +81,14 @@ int client_side(int PORT, char TARGET_IP[16]) {
   }
 
   // Manage packet content
-  int start_index = 0;
-  int end_index;
-  vector<vector<int>> index;
-  std::ostringstream oss;
-  vector<string> msg_packet = {FILENAME, file_content};
-  for (int i = 0; i < std::size(msg_packet); i++) {
-    end_index = start_index + msg_packet[i].length() - 1;
-    index.push_back({start_index, end_index});
-    start_index = end_index + 1;
-    MESSAGE += msg_packet[i];
-  }
-  for (const auto &pair : index) {
-    oss << pair[0] << "," << pair[1] << ",";
-  }
-  MESSAGE += "~~~" + oss.str() + "~~~";
-  // cout << MESSAGE << endl;
+  FILE_CONTENT = file_content;
+  std::vector<uint8_t> payload = pack_file();
 
-  // Send package content
-  if (send(client_socket, MESSAGE.c_str(), MESSAGE.size(), 0) < 0) {
-    cerr << "Error sending request" << endl;
-  } else {
-    cout << "Request sent" << endl;
-    cout << msg_packet.data() << endl;
-  }
+  WireHeader header;
+  header.payload_length = htonl(static_cast<uint8_t>(payload.size()));
+  header.msg_type = htons(0x0100);
+  send_exact(client_socket, &header, sizeof(WireHeader));    // Send header
+  send_exact(client_socket, payload.data(), payload.size()); // Send payload
 
   // Recieve answer
   char answer_bytes[2048];

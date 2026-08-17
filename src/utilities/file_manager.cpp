@@ -3,11 +3,19 @@
 #include <bits/stdc++.h>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <netinet/in.h>
 #include <sstream>
 #include <string>
 #include <sys/types.h>
+#include <vector>
+
+uint32_t FILE_INDEX;
+std::string FILE_NAME;
+std::string COMPILE_COMMAND;
+std::string FILE_CONTENT;
 
 std::string read_file(const std::string &file_name) {
   std::cout << "Reading file" << std::endl;
@@ -19,36 +27,49 @@ std::string read_file(const std::string &file_name) {
   return ss.str();
 }
 
-void catch_file(const char *buffer) {
+void catch_file(std::string PATH_TO_FILE) {
   std::cout << "Catching file" << std::endl;
-  std::ofstream file_to_compile(FILENAME);
-  file_to_compile << buffer;
-  file_to_compile.close();
+  std::ofstream file(FILE_NAME);
+  file << PATH_TO_FILE;
+  file.close();
 }
 
-std::vector<int> pull_index(const std::string &message) {
-  std::vector<int> indexValues;
-  const std::string delimeter = "~~~";
-
-  size_t startPoint = message.find(delimeter);
-  if (startPoint == std::string::npos)
-    return indexValues; // No start point
-
-  startPoint += delimeter.length();
-  size_t endPoint = message.find(delimeter, startPoint);
-  if (endPoint == std::string::npos)
-    return indexValues; // No end point
-
-  std::string content = message.substr(startPoint, endPoint - startPoint);
-
-  std::stringstream ss(content);
-  std::string token;
-  while (std::getline(ss, token, ',')) {
-    if (!token.empty()) {
-      indexValues.push_back(std::stoi(token));
-    }
+std::vector<uint8_t> pack_file() {
+  std::vector<uint8_t> buffer;
+  // Index
+  uint32_t net_id = htonl(FILE_INDEX);
+  const auto *p = reinterpret_cast<const uint8_t *>(&net_id);
+  buffer.insert(buffer.end(), p, p + 4); // 4 bytes
+  // Filename
+  if (FILE_NAME.size() > UINT16_MAX) {
+    std::cerr << "Unable to send. Filename is too big.";
+    return {};
   }
-  return indexValues;
+  uint16_t net_name_length = htons(static_cast<uint16_t>(FILE_NAME.size()));
+  p = reinterpret_cast<const uint8_t *>(&net_name_length);
+  buffer.insert(buffer.end(), p, p + 2); // 2 bytes
+  buffer.insert(buffer.end(), FILE_NAME.begin(), FILE_NAME.end());
+  // Compile command
+  if (COMPILE_COMMAND.size() > UINT16_MAX) {
+    std::cerr << "Unable to send. Entered command is too long.";
+    return {};
+  }
+  uint16_t net_cmd_length =
+      htons(static_cast<uint16_t>(COMPILE_COMMAND.size()));
+  p = reinterpret_cast<const uint8_t *>(&net_cmd_length);
+  buffer.insert(buffer.end(), p, p + 2); // 2 bytes
+  buffer.insert(buffer.end(), COMPILE_COMMAND.begin(), COMPILE_COMMAND.end());
+  // File content
+  if (FILE_CONTENT.size() > UINT32_MAX) {
+    std::cerr << "Unable to send. File exceeds 4gb limit.";
+    return {};
+  }
+  uint32_t net_ct_len = htonl(static_cast<uint32_t>(FILE_CONTENT.size()));
+  p = reinterpret_cast<const uint8_t *>(&net_ct_len);
+  buffer.insert(buffer.end(), p, p + 4); // 4 bytes
+  buffer.insert(buffer.end(), FILE_CONTENT.begin(), FILE_CONTENT.end());
+
+  return buffer;
 }
 
 std::string compile_file(const std::string &command) {

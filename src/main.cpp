@@ -9,9 +9,7 @@ using namespace std;
 
 int PORT;
 char TARGET_IP[16];
-std::string COMMAND;
 std::string PATH_TO_FILE;
-std::string FILENAME;
 
 class TerminalOutputCatch : public std::streambuf {
 public:
@@ -110,27 +108,22 @@ private:
   wxButton *clt_executeBtn = nullptr;
   std::streambuf *oldCoutBuffer = nullptr;
   std::streambuf *oldCerrBuffer = nullptr;
+  server_class server;
+  client_class client;
 #ifdef _WIN32
   OPENFILENAME file_to_open{};
-#else __linux__
-
 #endif
 
   void initServerPanel() {
     serverPanel = new wxPanel(m_book);
     new wxStaticText(serverPanel, ID_SERVER_SIDE, "PORT:", wxPoint(20, 20),
                      wxSize(35, 15));
-    new wxStaticText(serverPanel, ID_SERVER_SIDE, "COMMAND", wxPoint(20, 50),
-                     wxSize(65, 15));
     server_portInput = new wxTextCtrl(serverPanel, ID_SERVER_SIDE, "",
                                       wxPoint(60, 20), wxSize(50, 20));
-    commandInput = new wxTextCtrl(serverPanel, ID_SERVER_SIDE, "",
-                                  wxPoint(20, 70), wxSize(155, 40));
-
-    clt_executeBtn =
+    srv_executeBtn =
         new wxButton(serverPanel, ID_SERVER_SIDE, wxString("EXECUTE"),
-                     wxPoint(20, 140), wxSize(80, 20));
-    clt_executeBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onServerExecuteClicked,
+                     wxPoint(20, 70), wxSize(80, 20));
+    srv_executeBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onServerExecuteClicked,
                          this);
     terminalCatch(serverPanel, ID_SERVER_SIDE);
     m_book->AddPage(serverPanel, "Server Side", true);
@@ -142,22 +135,27 @@ private:
                      wxSize(35, 15));
     new wxStaticText(clientPanel, ID_CLIENT_SIDE, "SERVER IP:", wxPoint(20, 60),
                      wxSize(63, 15));
+    new wxStaticText(clientPanel, ID_CLIENT_SIDE, "COMMAND", wxPoint(20, 90),
+                     wxSize(70, 15));
 
     browseBtn = new wxButton(clientPanel, ID_CLIENT_SIDE, wxString("BROWSE"),
-                             wxPoint(20, 100), wxSize(80, 20));
-    srv_executeBtn =
+                             wxPoint(20, 170), wxSize(80, 20));
+    clt_executeBtn =
         new wxButton(clientPanel, ID_CLIENT_SIDE, wxString("EXECUTE"),
-                     wxPoint(20, 140), wxSize(80, 20));
+                     wxPoint(20, 205), wxSize(80, 20));
 
     browseBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onBrowseClicked, this);
-    srv_executeBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onClientExecuteClicked,
+    clt_executeBtn->Bind(wxEVT_BUTTON, &RCE_Frame::onClientExecuteClicked,
                          this);
 
     // TODO: These must have clamp of some sort
+    commandInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",
+                                  wxPoint(20, 115), wxSize(155, 40));
+
     client_portInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",
                                       wxPoint(60, 20), wxSize(50, 20));
     ipInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "", wxPoint(86, 60),
-                             wxSize(90, 20));
+                             wxSize(70, 20));
     terminalCatch(clientPanel, ID_CLIENT_SIDE);
     m_book->AddPage(clientPanel, "Client Side", true);
   }
@@ -194,7 +192,7 @@ private:
                                 wxFD_OPEN | wxFD_FILE_MUST_EXIST);
     if (openFileDialog.ShowModal() == wxID_OK) {
       std::string narrowPath = openFileDialog.GetPath().ToStdString();
-      FILENAME = openFileDialog.GetFilename().ToStdString();
+      FILE_NAME = openFileDialog.GetFilename().ToStdString();
       PATH_TO_FILE = narrowPath;
       std::cout << "Selected file: " + narrowPath << std::endl;
     }
@@ -209,11 +207,12 @@ private:
     if (port.ToLong(&temp)) {
       PORT = static_cast<int>(temp);
     }
+    COMPILE_COMMAND = commandInput->GetValue();
     std::thread([this]() {
       std::this_thread::sleep_for(std::chrono::milliseconds(800));
       std::cout << "Client Side started on " << TARGET_IP << ":" << PORT
                 << std::endl;
-      client_side(PORT, TARGET_IP);
+      client.client_side(PORT, TARGET_IP, COMPILE_COMMAND);
     }).detach();
   }
   void onServerExecuteClicked(wxCommandEvent &event) {
@@ -222,11 +221,10 @@ private:
     if (port.ToLong(&temp)) {
       PORT = static_cast<int>(temp);
     }
-    COMMAND = commandInput->GetValue();
     std::thread([this]() {
       std::this_thread::sleep_for(std::chrono::milliseconds(800));
       std::cout << "Server Side Started on port " << PORT << std::endl;
-      server_side(PORT, COMMAND);
+      server.server_side(PORT);
     }).detach();
   }
   void terminalCatch(wxWindow *panel, wxWindowID ID) {

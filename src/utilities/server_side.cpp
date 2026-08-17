@@ -1,8 +1,11 @@
 #include "bridge.h"
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 
 #ifdef _WIN32
@@ -14,7 +17,19 @@
 #include <unistd.h>
 #endif
 
-int server_side(int PORT, std::string COMMAND) {
+bool recv_exact(int fd, void *data, size_t size) {
+  size_t rx = 0;
+  auto *ptr = static_cast<const uint8_t *>(data);
+  while (rx < size) {
+    ssize_t res = recv_exact(fd, data, size);
+    if (res <= 0)
+      return false;
+    rx += res;
+  }
+  return true;
+}
+
+int server_class::server_side(int PORT) {
   int hostSocket, newSocket;
   struct sockaddr_in address;
   int opt = 1;
@@ -74,41 +89,86 @@ int server_side(int PORT, std::string COMMAND) {
     std::cout << "Connection established." << std::endl;
   }
 
-  // Read data and trigger compile phase
-  //  int filename_bytes = recv(newSocket, filenameBuffer,
-  //  sizeof(filenameBuffer)-1,0);// if (filename_bytes > 0) {
-  //      filenameBuffer[filename_bytes] = '\0';
-  //  }
-  std::string answer;
-  int recieved_bytes = recv(newSocket, buffer, sizeof(buffer) - 1, 0);
-  if (recieved_bytes > 0) {
-    std::cout << "File recieved" << std::endl;
-    buffer[recieved_bytes] = '\0';
-    // std::cout << "Message from client:\n" << buffer << std::endl;
-    std::vector<int> indexData = pull_index(buffer);
-    // std::cout << indexData[1] << std::endl;
-    std::string FILE_CONTENT;
-    for (int i = indexData[0]; i <= indexData[1]; i++) {
-      FILENAME += buffer[i];
-    }
-    for (int a = indexData[2]; a <= indexData[3]; a++) {
-      FILE_CONTENT += buffer[a];
-    }
-    std::cout << "Filename is: " << FILENAME << std::endl;
-    std::cout << "File content is: " << FILE_CONTENT << std::endl;
-    catch_file(FILE_CONTENT.c_str());
-    std::cout << COMMAND << std::endl;
-    answer = compile_file(COMMAND);
-    remove(FILENAME.c_str());
-  } else {
-    std::cerr << "Problem on receiving file." << std::endl;
+  // Recieve data
+  WireHeader header;
+  if (!recv_exact(newSocket, &header, sizeof(WireHeader))) {
+    std::cerr << "Error recieving header.";
+  }
+  uint32_t payload_length = ntohl(header.payload_length);
+  constexpr uint32_t MAX_PAYLOAD_SIZE = 64 * 1024 * 1024;
+  if (payload_length > MAX_PAYLOAD_SIZE) {
+    std::cerr << "Payload length exceed limit.";
   }
 
-  if (send(newSocket, answer.c_str(), answer.length(), 0) < 0) {
-    std::cerr << "Error sending answer" << std::endl;
-  } else {
-    std::cout << "Answer sent" << std::endl;
+  std::vector<uint8_t> payload_buffer(payload_length);
+  if (!recv_exact(newSocket, payload_buffer.data(), payload_length)) {
+    std::cerr << "Error recieving data.";
   }
+
+  // Deserialize and assign them to global variables
+  size_t offset = 0;
+  auto can_read = [&](size_t bytes) {
+    return (offset + bytes) <= payload_buffer.size();
+  };
+  // FILE_INDEX
+  uint32_t net_id;
+  if (!can_read(4)) {
+    std::cerr << "Unable to read index";
+    return false;
+  }
+  std::memcpy(&net_id, payload_buffer.data() + offset, 4);
+  FILE_INDEX = ntohl(net_id);
+  offset += 4;
+
+  // FILE_NAME
+  uint16_t net_fn_len;
+  if (!can_read(2)) {
+    std::cerr << "Unable to get file name length.";
+    return false;
+  }
+  std::memcpy(&net_fn_len, payload_buffer.data() + offset, 2);
+  uint16_t fn_len = ntohs(net_fn_len);
+  if (can_read(fn_len)) {
+    std::cerr << "Unable to read file name.";
+    return false;
+  }
+  offset += 2;
+  FILE_NAME.assign(
+      reinterpret_cast<const char *>(payload_buffer.data() + offset), fn_len);
+  offset += fn_len;
+
+  // COMPILE_COMMAND
+  uint16_t net_cmd_len;
+  if (!can_read(2)) {
+    std::cerr << "Unable to get command length.";
+    return false;
+  }
+  std::memcpy(&net_cmd_len, payload_buffer.data() + offset, 2);
+  uint16_t cmd_len = ntohs(net_cmd_len);
+  if (can_read(cmd_len)) {
+    std::cerr << "Unable to read command.";
+    return false;
+  }
+  offset += 2;
+  COMPILE_COMMAND.assign(
+      reinterpret_cast<const char *>(payload_buffer.data() + offset), cmd_len);
+  offset += cmd_len;
+
+  // FILE_CONTENT
+  if (!can_read(4)) {
+    std::cerr << "Unable to get file content length.";
+    return false;
+  }
+  uint32_t net_ct_len;
+  std::memcpy(&net_ct_len, payload_buffer.data() + offset, 4);
+  uint32_t ct_len = ntohl(net_ct_len);
+  if (can_read(fn_len)) {
+    std::cerr << "Unable to read file content.";
+    return false;
+  }
+  offset += 4;
+  FILE_CONTENT.assign(payload_buffer.data() + offset,
+                      payload_buffer.data() + offset + ct_len);
 
 #ifdef _WIN32
   closesocket(newSocket);
