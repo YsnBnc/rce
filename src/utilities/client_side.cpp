@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
@@ -81,7 +82,10 @@ int client_class::client_side(int PORT_CS, char TARGET_IP_CS[16],
   }
 
   // Manage packet content
+  // FILE_CONTENT = catch_file(file_content);
+  FILE_INDEX = 42;
   FILE_CONTENT = file_content;
+  std::cout << FILE_INDEX << FILE_NAME << FILE_CONTENT << std::endl;
   std::vector<uint8_t> payload = pack_file();
 
   WireHeader header;

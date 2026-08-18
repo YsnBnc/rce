@@ -4,22 +4,26 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <netinet/in.h>
 #include <sstream>
 #include <string>
 #include <sys/types.h>
 #include <vector>
+#ifdef WIN32
+#else
+#include <netinet/in.h>
+#endif // WIN32
 
 uint32_t FILE_INDEX;
 std::string FILE_NAME;
 std::string COMPILE_COMMAND;
 std::string FILE_CONTENT;
 
-std::string read_file(const std::string &file_name) {
+std::string read_file(const std::filesystem::path &PATH_TO_FILE) {
   std::cout << "Reading file" << std::endl;
-  std::ifstream ifs(file_name);
+  std::ifstream ifs(PATH_TO_FILE, std::ios::in | std::ios::binary);
   if (!ifs.is_open())
     return "";
   std::stringstream ss;
@@ -27,10 +31,10 @@ std::string read_file(const std::string &file_name) {
   return ss.str();
 }
 
-void catch_file(std::string PATH_TO_FILE) {
+void write_file(std::string FILE_CONTENT) {
   std::cout << "Catching file" << std::endl;
   std::ofstream file(FILE_NAME);
-  file << PATH_TO_FILE;
+  file << FILE_CONTENT;
   file.close();
 }
 

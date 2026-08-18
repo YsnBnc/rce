@@ -194,6 +194,7 @@ private:
       std::string narrowPath = openFileDialog.GetPath().ToStdString();
       FILE_NAME = openFileDialog.GetFilename().ToStdString();
       PATH_TO_FILE = narrowPath;
+      // std::cout << read_file(PATH_TO_FILE);
       std::cout << "Selected file: " + narrowPath << std::endl;
     }
 #endif
