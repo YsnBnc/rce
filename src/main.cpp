@@ -5,6 +5,7 @@
 #include <thread>
 #include <wx/simplebook.h>
 #include <wx/wx.h>
+
 using namespace std;
 
 int PORT;
@@ -94,6 +95,11 @@ public:
   }
 
 private:
+  uint32_t FILE_INDEX = 42;
+  std::string FILE_NAME;
+  std::string FILE_CONTENT;
+  std::string PATH_TO_FILE;
+  std::string COMPILE_COMMAND;
   wxSimplebook *m_book = nullptr;
   wxPanel *serverPanel = nullptr;
   wxPanel *clientPanel = nullptr;
@@ -194,8 +200,8 @@ private:
       std::string narrowPath = openFileDialog.GetPath().ToStdString();
       FILE_NAME = openFileDialog.GetFilename().ToStdString();
       PATH_TO_FILE = narrowPath;
-      // std::cout << read_file(PATH_TO_FILE);
       std::cout << "Selected file: " + narrowPath << std::endl;
+      FILE_CONTENT = read_file(PATH_TO_FILE);
     }
 #endif
   }
@@ -213,7 +219,12 @@ private:
       std::this_thread::sleep_for(std::chrono::milliseconds(800));
       std::cout << "Client Side started on " << TARGET_IP << ":" << PORT
                 << std::endl;
-      client.client_side(PORT, TARGET_IP, COMPILE_COMMAND);
+      client.client_side(PORT, TARGET_IP, FILE_INDEX, FILE_NAME,
+                         COMPILE_COMMAND, FILE_CONTENT);
+      std::cout << FILE_INDEX << std::endl
+                << FILE_NAME << std::endl
+                << COMPILE_COMMAND << std::endl
+                << FILE_CONTENT;
     }).detach();
   }
   void onServerExecuteClicked(wxCommandEvent &event) {

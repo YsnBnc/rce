@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <sys/types.h>
 #include <vector>
@@ -19,9 +20,9 @@
 
 bool recv_exact(int fd, void *data, size_t size) {
   size_t rx = 0;
-  auto *ptr = static_cast<const uint8_t *>(data);
+  auto *ptr = static_cast<uint8_t *>(data);
   while (rx < size) {
-    ssize_t res = recv_exact(fd, data, size);
+    ssize_t res = recv(fd, (ptr + rx), (size - rx), 0);
     if (res <= 0)
       return false;
     rx += res;
@@ -34,8 +35,12 @@ int server_class::server_side(int PORT) {
   struct sockaddr_in address;
   int opt = 1;
   int addrlen = sizeof(address);
-  // char filenameBuffer[256];
-  char buffer[1460] = {0};
+  uint32_t FILE_INDEX;
+  std::string FILE_NAME;
+  std::string FILE_CONTENT;
+  std::string PATH_TO_FILE;
+  std::string COMPILE_COMMAND;
+
   std::cout << "Server starting...";
 #ifdef _WIN32
   WSAData wsaData{};
@@ -93,6 +98,9 @@ int server_class::server_side(int PORT) {
   WireHeader header;
   if (!recv_exact(newSocket, &header, sizeof(WireHeader))) {
     std::cerr << "Error recieving header.";
+  } else {
+    std::cout << "Header recieved " << "msg_type: " << header.msg_type
+              << " payload_length:" << header.payload_length << std::endl;
   }
   uint32_t payload_length = ntohl(header.payload_length);
   constexpr uint32_t MAX_PAYLOAD_SIZE = 64 * 1024 * 1024;
@@ -103,6 +111,11 @@ int server_class::server_side(int PORT) {
   std::vector<uint8_t> payload_buffer(payload_length);
   if (!recv_exact(newSocket, payload_buffer.data(), payload_length)) {
     std::cerr << "Error recieving data.";
+  } else {
+    std::cout << "Data recieved." << std::endl;
+    for (int i = 0; i < payload_buffer.size(); i++) {
+      std::cout << payload_buffer[i];
+    }
   }
 
   // Deserialize and assign them to global variables
@@ -111,48 +124,51 @@ int server_class::server_side(int PORT) {
     return (offset + bytes) <= payload_buffer.size();
   };
   // FILE_INDEX
-  uint32_t net_id;
   if (!can_read(4)) {
     std::cerr << "Unable to read index";
     return false;
   }
+  uint32_t net_id;
   std::memcpy(&net_id, payload_buffer.data() + offset, 4);
   FILE_INDEX = ntohl(net_id);
   offset += 4;
+  std::cout << FILE_INDEX << std::endl;
 
   // FILE_NAME
-  uint16_t net_fn_len;
   if (!can_read(2)) {
     std::cerr << "Unable to get file name length.";
     return false;
   }
+  uint16_t net_fn_len;
   std::memcpy(&net_fn_len, payload_buffer.data() + offset, 2);
+  offset += 2;
   uint16_t fn_len = ntohs(net_fn_len);
-  if (can_read(fn_len)) {
+  if (!can_read(fn_len)) {
     std::cerr << "Unable to read file name.";
     return false;
   }
-  offset += 2;
   FILE_NAME.assign(
       reinterpret_cast<const char *>(payload_buffer.data() + offset), fn_len);
   offset += fn_len;
+  std::cout << FILE_NAME << std::endl;
 
   // COMPILE_COMMAND
-  uint16_t net_cmd_len;
   if (!can_read(2)) {
     std::cerr << "Unable to get command length.";
     return false;
   }
+  uint16_t net_cmd_len;
   std::memcpy(&net_cmd_len, payload_buffer.data() + offset, 2);
+  offset += 2;
   uint16_t cmd_len = ntohs(net_cmd_len);
-  if (can_read(cmd_len)) {
+  if (!can_read(cmd_len)) {
     std::cerr << "Unable to read command.";
     return false;
   }
-  offset += 2;
   COMPILE_COMMAND.assign(
       reinterpret_cast<const char *>(payload_buffer.data() + offset), cmd_len);
   offset += cmd_len;
+  std::cout << COMPILE_COMMAND << std::endl;
 
   // FILE_CONTENT
   if (!can_read(4)) {
@@ -161,15 +177,16 @@ int server_class::server_side(int PORT) {
   }
   uint32_t net_ct_len;
   std::memcpy(&net_ct_len, payload_buffer.data() + offset, 4);
+  offset += 4;
   uint32_t ct_len = ntohl(net_ct_len);
-  if (can_read(fn_len)) {
+  if (!can_read(ct_len)) {
     std::cerr << "Unable to read file content.";
     return false;
   }
-  offset += 4;
-  FILE_CONTENT.assign(payload_buffer.data() + offset,
-                      payload_buffer.data() + offset + ct_len);
-
+  FILE_CONTENT.assign(
+      reinterpret_cast<const char *>(payload_buffer.data() + offset), ct_len);
+  std::cout << FILE_CONTENT << std::endl;
+  ;
 #ifdef _WIN32
   closesocket(newSocket);
   closesocket(hostSocket);

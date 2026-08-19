@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -16,11 +17,6 @@
 #include <netinet/in.h>
 #endif // WIN32
 
-uint32_t FILE_INDEX;
-std::string FILE_NAME;
-std::string COMPILE_COMMAND;
-std::string FILE_CONTENT;
-
 std::string read_file(const std::filesystem::path &PATH_TO_FILE) {
   std::cout << "Reading file" << std::endl;
   std::ifstream ifs(PATH_TO_FILE, std::ios::in | std::ios::binary);
@@ -31,14 +27,17 @@ std::string read_file(const std::filesystem::path &PATH_TO_FILE) {
   return ss.str();
 }
 
+// TODO:
 void write_file(std::string FILE_CONTENT) {
   std::cout << "Catching file" << std::endl;
-  std::ofstream file(FILE_NAME);
-  file << FILE_CONTENT;
-  file.close();
+  // std::ofstream file(FILE_NAME);
+  // file << FILE_CONTENT;
+  // file.close();
 }
 
-std::vector<uint8_t> pack_file() {
+std::vector<uint8_t> pack_file(uint32_t FILE_INDEX, std::string FILE_NAME,
+                               std::string CMPL_COMMAND,
+                               std::string FILE_CONTENT) {
   std::vector<uint8_t> buffer;
   // Index
   uint32_t net_id = htonl(FILE_INDEX);
@@ -54,15 +53,14 @@ std::vector<uint8_t> pack_file() {
   buffer.insert(buffer.end(), p, p + 2); // 2 bytes
   buffer.insert(buffer.end(), FILE_NAME.begin(), FILE_NAME.end());
   // Compile command
-  if (COMPILE_COMMAND.size() > UINT16_MAX) {
+  if (CMPL_COMMAND.size() > UINT16_MAX) {
     std::cerr << "Unable to send. Entered command is too long.";
     return {};
   }
-  uint16_t net_cmd_length =
-      htons(static_cast<uint16_t>(COMPILE_COMMAND.size()));
+  uint16_t net_cmd_length = htons(static_cast<uint16_t>(CMPL_COMMAND.size()));
   p = reinterpret_cast<const uint8_t *>(&net_cmd_length);
   buffer.insert(buffer.end(), p, p + 2); // 2 bytes
-  buffer.insert(buffer.end(), COMPILE_COMMAND.begin(), COMPILE_COMMAND.end());
+  buffer.insert(buffer.end(), CMPL_COMMAND.begin(), CMPL_COMMAND.end());
   // File content
   if (FILE_CONTENT.size() > UINT32_MAX) {
     std::cerr << "Unable to send. File exceeds 4gb limit.";
@@ -71,7 +69,9 @@ std::vector<uint8_t> pack_file() {
   uint32_t net_ct_len = htonl(static_cast<uint32_t>(FILE_CONTENT.size()));
   p = reinterpret_cast<const uint8_t *>(&net_ct_len);
   buffer.insert(buffer.end(), p, p + 4); // 4 bytes
-  buffer.insert(buffer.end(), FILE_CONTENT.begin(), FILE_CONTENT.end());
+
+  buffer.insert(buffer.end(), FILE_CONTENT.data(),
+                FILE_CONTENT.data() + FILE_CONTENT.size());
 
   return buffer;
 }

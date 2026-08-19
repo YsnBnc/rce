@@ -36,18 +36,12 @@ bool send_exact(int fd, const void *data, size_t size) {
   return true;
 }
 
-int client_class::client_side(int PORT_CS, char TARGET_IP_CS[16],
-                              std::string COMPILE_COMMAND_CS) {
-  string MESSAGE;
+int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
+                              std::string FILE_NAME, std::string CMPL_COMMAND,
+                              std::string FILE_CONTENT) {
   int client_socket = 0;
   struct sockaddr_in server_address;
   char buffer[1460] = {0};
-  string file_content =
-      read_file(PATH_TO_FILE); // TODO This wants absolute path
-  if (file_content.empty()) {
-    std::cerr << "Client failed to read file data." << std::endl;
-    return 1;
-  }
 
 #ifdef WIN32
   WSADATA wsaData;
@@ -64,10 +58,10 @@ int client_class::client_side(int PORT_CS, char TARGET_IP_CS[16],
     cerr << "Error creating socket" << endl;
   }
   server_address.sin_family = AF_INET;
-  server_address.sin_port = htons(PORT_CS);
+  server_address.sin_port = htons(PORT);
 
   // Convert IPv4 to IPv6
-  if (inet_pton(AF_INET, TARGET_IP_CS, &server_address.sin_addr) <= 0) {
+  if (inet_pton(AF_INET, TARGET_IP, &server_address.sin_addr) <= 0) {
     cerr << "Invalid address/ Address not supported \n";
   }
 
@@ -83,11 +77,12 @@ int client_class::client_side(int PORT_CS, char TARGET_IP_CS[16],
 
   // Manage packet content
   // FILE_CONTENT = catch_file(file_content);
-  FILE_INDEX = 42;
-  FILE_CONTENT = file_content;
-  std::cout << FILE_INDEX << FILE_NAME << FILE_CONTENT << std::endl;
-  std::vector<uint8_t> payload = pack_file();
-
+  std::vector<uint8_t> payload =
+      pack_file(FILE_INDEX, FILE_NAME, CMPL_COMMAND, FILE_CONTENT);
+  std::cout << "Sent data: " << std::endl;
+  for (int i = 0; i < payload.size(); i++) {
+    std::cout << payload[i];
+  }
   WireHeader header;
   header.payload_length = htonl(static_cast<uint8_t>(payload.size()));
   header.msg_type = htons(0x0100);
