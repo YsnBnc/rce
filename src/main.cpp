@@ -3,7 +3,7 @@
 #include <iostream>
 #include <streambuf>
 #include <thread>
-#include <wx/simplebook.h>
+#include <wx/simplebook.h>  
 #include <wx/wx.h>
 
 using namespace std;
@@ -221,10 +221,10 @@ private:
                 << std::endl;
       client.client_side(PORT, TARGET_IP, FILE_INDEX, FILE_NAME,
                          COMPILE_COMMAND, FILE_CONTENT);
-      std::cout << FILE_INDEX << std::endl
-                << FILE_NAME << std::endl
-                << COMPILE_COMMAND << std::endl
-                << FILE_CONTENT;
+      // std::cout << FILE_INDEX << std::endl
+      //           << FILE_NAME << std::endl
+      //           << COMPILE_COMMAND << std::endl
+      //           << FILE_CONTENT;
     }).detach();
   }
   void onServerExecuteClicked(wxCommandEvent &event) {
@@ -243,7 +243,8 @@ private:
     terminalOutput =
         new wxTextCtrl(panel, ID, "", wxPoint(180, 15), wxSize(490, 300),
                        wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH2);
-    terminalOutput->SetForegroundColour(wxColour(54, 69, 79));
+    terminalOutput->SetForegroundColour(wxColour(225, 225, 225));
+    terminalOutput->SetBackgroundColour(wxColour(0, 0, 0));
     terminalOutput->SetFont(wxFontInfo(10).Family(wxFONTFAMILY_TELETYPE));
 
     // Redirect cout and cerr stream buffers

@@ -24,24 +24,13 @@
 #endif
 using namespace std;
 
-bool send_exact(int fd, const void *data, size_t size) {
-  size_t sent = 0;
-  const auto *ptr = static_cast<const uint8_t *>(data);
-  while (sent < size) {
-    ssize_t res = send(fd, ptr + sent, size - sent, 0);
-    if (res <= 0)
-      return false; // Socket error
-    sent += res;
-  }
-  return true;
-}
-
 int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
                               std::string FILE_NAME, std::string CMPL_COMMAND,
                               std::string FILE_CONTENT) {
   int client_socket = 0;
   struct sockaddr_in server_address;
-  char buffer[1460] = {0};
+  uint32_t RESPONSE_INDEX;
+  std::string RESPONSE;
 
 #ifdef WIN32
   WSADATA wsaData;
@@ -76,28 +65,74 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
   }
 
   // Manage packet content
-  // FILE_CONTENT = catch_file(file_content);
-  std::vector<uint8_t> payload =
-      pack_file(FILE_INDEX, FILE_NAME, CMPL_COMMAND, FILE_CONTENT);
+  std::vector<uint8_t> payload = pack_file(FILE_INDEX, FILE_NAME, CMPL_COMMAND, FILE_CONTENT);
   std::cout << "Sent data: " << std::endl;
-  for (int i = 0; i < payload.size(); i++) {
-    std::cout << payload[i];
-  }
+  // for (int i = 0; i < payload.size(); i++) {
+  //   std::cout << payload[i];
+  // }
   WireHeader header;
   header.payload_length = htonl(static_cast<uint8_t>(payload.size()));
   header.msg_type = htons(0x0100);
   send_exact(client_socket, &header, sizeof(WireHeader));    // Send header
   send_exact(client_socket, payload.data(), payload.size()); // Send payload
+  std::cout << "Sent file: " << FILE_NAME << std::endl;
 
-  // Recieve answer
-  char answer_bytes[2048];
-  int recieved_bytes = recv(client_socket, buffer, sizeof(buffer), 0);
-  if (recieved_bytes > 0) {
-    answer_bytes[recieved_bytes] = '\0';
-    cout << "Answer from server: " << buffer << endl;
-  } else {
-    cerr << "Error receiving answer" << endl;
+  // Recieve answer data
+ if (!recv_exact(client_socket, &header, sizeof(WireHeader))) {
+    std::cerr << "Error recieving header.";
+  } 
+  // else {
+  //   std::cout << "Header recieved " << "msg_type: " << header.msg_type
+  //             << " payload_length:" << header.payload_length << std::endl;
+  // }
+  uint32_t payload_length = ntohl(header.payload_length);
+  constexpr uint32_t MAX_PAYLOAD_SIZE = 64 * 1024 * 1024;
+  if (payload_length > MAX_PAYLOAD_SIZE) {
+    std::cerr << "Payload length exceed limit.";
   }
+
+  std::vector<uint8_t> payload_buffer(payload_length);
+  if (!recv_exact(client_socket, payload_buffer.data(), payload_length)) {
+    std::cerr << "Error recieving data.";
+  } else {
+    std::cout << "Data recieved." << std::endl;
+    // for (int i = 0; i < payload_buffer.size(); i++) {
+    //   std::cout << payload_buffer[i];
+    // }
+  }
+
+  size_t offset = 0;
+  auto can_read = [&](size_t bytes) {
+    return (offset + bytes) <= payload_buffer.size();
+  };
+  //RESPONSE_INDEX
+  if (!can_read(4)) {
+    std::cerr << "Unable to read index";
+    return false;
+  }
+  uint32_t net_id;
+  std::memcpy(&net_id, payload_buffer.data() + offset, 4);
+  RESPONSE_INDEX = ntohl(net_id);
+  offset += 4;
+  //std::cout << RESPONSE_INDEX << std::endl;
+
+  //RESPONSE
+  if (!can_read(2)) {
+    std::cerr << "Unable to get file name length.";
+    return false;
+  }
+  uint16_t net_rsp_len;
+  std::memcpy(&net_rsp_len, payload_buffer.data() + offset, 2);
+  offset += 2;
+  uint16_t rsp_len = ntohs(net_rsp_len);
+  if (!can_read(rsp_len)) {
+    std::cerr << "Unable to read file name.";
+    return false;
+  }
+  RESPONSE.assign(reinterpret_cast<const char *>(payload_buffer.data() + offset), rsp_len);
+  offset += rsp_len;
+  std::cout << "Response from server:\n" << RESPONSE << std::endl;
+
 
   // Close socket;
 #ifdef _WIN32
