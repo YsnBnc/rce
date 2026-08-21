@@ -13,6 +13,7 @@ A lightweight, cross-platform framework for securely executing code on remote se
 - **Compiler** — GCC, Clang, or MSVC
 
 ### Installation
+There is already built version in case you don't want to build yourself.
 
 **Ubuntu/Debian:**
 ```bash
