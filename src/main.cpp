@@ -260,8 +260,12 @@ private:
     terminalOutput =
         new wxTextCtrl(panel, ID, "", wxPoint(180, 15), wxSize(490, 300),
                        wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH2);
+#ifdef WIN32
+    terminalOutput->SetBackgroundColour(wxColour(210, 210, 210));
+#else
     terminalOutput->SetForegroundColour(wxColour(225, 225, 225));
     terminalOutput->SetBackgroundColour(wxColour(0, 0, 0));
+#endif
     terminalOutput->SetFont(wxFontInfo(10).Family(wxFONTFAMILY_TELETYPE));
 
     // Redirect cout and cerr stream buffers

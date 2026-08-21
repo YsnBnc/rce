@@ -35,7 +35,7 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
   WSADATA wsaData;
   int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
   if (wsaResult != 0) {
-    cerr << "WSAStartup() failed." << endl;
+    std::cerr << "WSAStartup() failed." << std::endl;
     return 1;
   }
 #endif
@@ -57,7 +57,7 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
 #ifdef WIN32
     closesocket(client_socket);
     WSACleanup();
-    cerr << "Connect failed with error code: " << WSAGetLastError() << endl;
+    std::cerr << "Connect failed with error code: " << WSAGetLastError() << std::endl;
 #else
     close(client_socket);
     std::cerr << "Connect failed with error code: " << strerror(errno) << std::endl;

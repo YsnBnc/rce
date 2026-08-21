@@ -13,6 +13,7 @@
 #include <vector>
 #include <atomic>
 #ifdef WIN32
+#include <winsock.h>
 #else
 #include <netinet/in.h>
 #endif // WIN32
@@ -21,7 +22,7 @@ bool recv_exact(int fd, void *data, size_t size) {
   size_t rx = 0;
   auto *ptr = static_cast<uint8_t *>(data);
   while (rx < size) {
-    ssize_t res = recv(fd, (ptr + rx), (size - rx), 0);
+    ssize_t res = recv(fd, reinterpret_cast<char *>(ptr + rx), (size - rx), 0);
     if (res <= 0)
       return false;
     rx += res;
@@ -33,7 +34,7 @@ bool send_exact(int fd, const void *data, size_t size) {
   size_t sent = 0;
   const auto *ptr = static_cast<const uint8_t *>(data);
   while (sent < size) {
-    ssize_t res = send(fd, ptr + sent, size - sent, 0);
+    ssize_t res = send(fd, reinterpret_cast<const char *>(ptr + sent), size - sent, 0);
     if (res <= 0)
       return false; // Socket error
     sent += res;
