@@ -175,7 +175,7 @@ All multi-byte integers are in **network byte order** (big-endian) using `htonl(
 
 ## Troubleshooting
 
-### Windows: Missing DLL when trying to run executable
+### Windows: Missing DLL error when trying to run executable
 - Create `resource.rc` file in project directory
 - Paste following lines
 ```bash
