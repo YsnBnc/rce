@@ -18,6 +18,10 @@ A lightweight, cross-platform framework for securely executing code on remote se
 ```bash
 sudo apt-get install libwxgtk3.0-gtk3-dev cmake build-essential
 ```
+**Arch:**
+```bash
+sudo pacman -S base-devel cmake wxgtk3
+```
 **macOS:**
 ```bash
 brew install wxwidgets cmake
