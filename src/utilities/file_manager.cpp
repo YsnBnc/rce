@@ -1,6 +1,5 @@
 #include "bridge.h"
 #include <array>
-#include <bits/stdc++.h>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -12,6 +11,7 @@
 #include <string>
 #include <sys/types.h>
 #include <vector>
+#include <atomic>
 #ifdef WIN32
 #else
 #include <netinet/in.h>
@@ -130,9 +130,9 @@ std::string compile_file(const std::string &command) {
   FILE *pipe = popen(redirect_command.c_str(), "r");
 #endif
 
-  if (!pipe)
-    std::cerr << "Failed to execution pipeline" << std::endl;
-
+  if (!pipe){
+    return "Failed to execution pipeline.\n";
+  }
   while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
     output += buffer.data();
   }
