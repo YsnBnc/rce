@@ -4,19 +4,6 @@ A lightweight, cross-platform framework for securely executing code on remote se
 
 > **Warning:** By design, this application allows arbitrary code execution on the server host. It is strictly intended for controlled environments, private networks, or authorized remote task execution. Do not expose to untrusted networks.
 
----
-
-## Features
-
-- ✅ **Cross-Platform Support** — Windows, Linux, macOS
-- ✅ **wxWidgets GUI** — Easy-to-use client and server interface
-- ✅ **Bidirectional Communication** — File transfer + execution output return
-- ✅ **Reliable Protocol** — Custom wire protocol with payload validation
-- ✅ **Real-time Output** — Stdout/stderr streamed back to client
-- ✅ **Temporary File Cleanup** — Automatic removal after execution
-
----
-
 ## Requirements
 
 ### Dependencies
@@ -31,7 +18,6 @@ A lightweight, cross-platform framework for securely executing code on remote se
 ```bash
 sudo apt-get install libwxgtk3.0-gtk3-dev cmake build-essential
 ```
-
 **macOS:**
 ```bash
 brew install wxwidgets cmake
@@ -103,23 +89,6 @@ The GUI will open with two tabs: **Server Side** and **Client Side**.
    - Sends output back to client
    - Cleans up temporary file
 
-**Example:**
-```
-Port: 8888
-[EXECUTE]
-
-Output:
-Server starting...
-Socket created.
-Bind successful.
-Listening for connections...
-Connection established.
-Data recieved.
-Received file: test.cpp
-Compiling file
-File compiled
-```
-
 ### Client Mode
 
 **Purpose:** Connect to a remote server, send code to compile/execute, receive results.
@@ -132,26 +101,6 @@ File compiled
 5. Click **BROWSE** to select a file
 6. Click **EXECUTE** to send
 7. Wait for output to appear in terminal
-
-**Example:**
-```
-Port: 8888
-Server IP: 192.168.1.100
-Command: g++ test.cpp -o test
-
-[BROWSE] → select test.cpp
-[EXECUTE]
-
-Output:
-Client Side started on 192.168.1.100:8888
-Sent data:
-Sent file: test.cpp
-Data recieved.
-Response from server:
-[compilation successful output...]
-```
-
----
 
 ## Protocol
 
@@ -200,34 +149,6 @@ All multi-byte integers are in **network byte order** (big-endian) using `htonl(
 
 ---
 
-## Architecture
-
-### Directory Structure
-
-```
-rce/
-├── src/
-│   ├── main.cpp              # GUI app, wxWidgets frame, event handlers
-│   └── utilities/
-│       ├── bridge.h          # Protocol definitions, function declarations
-│       ├── client_side.cpp    # Client socket logic, sending files
-│       ├── server_side.cpp    # Server socket logic, receiving & executing
-│       └── file_manager.cpp   # Packing, serialization, compilation
-├── CMakeLists.txt            # Build configuration
-├── LICENSE                   # MIT License
-└── README.md                 # This file
-```
-
-### Key Components
-
-| Component | Purpose |
-|-----------|---------|
-| **main.cpp** | wxWidgets GUI, tab switching, input handling |
-| **client_side.cpp** | Socket connection, file packing, sending, receiving response |
-| **server_side.cpp** | Socket listening, receiving payload, deserializing data |
-| **file_manager.cpp** | Serialization (pack_file), execution (compile_file), I/O |
-| **bridge.h** | Protocol definitions, function prototypes, WireHeader struct |
-
 ### Communication Flow
 
 ```
@@ -252,97 +173,26 @@ rce/
 10. GUI displays output to user
 ```
 
----
-
-## Examples
-
-### Example 1: Compile C++ on Remote Server
-
-**Client Setup:**
-```
-Port: 9000
-Server IP: 10.0.0.50
-Command: g++ -std=c++17 main.cpp -o main
-File: /home/user/main.cpp
-```
-
-**Server:** Running on `10.0.0.50:9000`
-
-**Result:** Compiled binary `main` created on server, output sent to client GUI
-
----
-
-### Example 2: Run Python Script
-
-**Client Setup:**
-```
-Port: 9000
-Server IP: 10.0.0.50
-Command: python3 script.py
-File: /path/to/script.py
-```
-
-**Server Output:**
-```
-Script execution result displayed in client terminal
-```
-
----
-
-### Example 3: Execute Bash Commands
-
-**Client Setup:**
-```
-Port: 9000
-Server IP: 10.0.0.50
-Command: bash test.sh
-File: /path/to/test.sh
-```
-
-**Server:** Executes bash script, streams output to client
-
----
-
-## Platform-Specific Notes
-
-### Windows
-- Requires absolute file paths (e.g., `C:\Users\user\file.cpp`)
-- Uses `WSAStartup()`/`WSACleanup()` for socket initialization
-- Uses `_popen()`/`_pclose()` for command execution
-- Built with `-static-libgcc -static-libstdc++ -static` flags
-
-### Linux/macOS
-- Supports relative and absolute file paths
-- Uses POSIX socket API
-- Uses `popen()`/`pclose()` for command execution
-- Requires `libwxgtk3.0-gtk3` on Linux
-
----
-
 ## Troubleshooting
 
-### "Connect failed"
-- Verify server is running and listening on the specified port
-- Check firewall settings
-- Ensure server IP is correct (use `ifconfig` or `ipconfig` to find)
-
-### "Bind failed"
-- Port is already in use. Try a different port (8000-9000 range is safe)
-- On Linux, may need `sudo` for ports < 1024
-
-### "Failed to execution pipeline"
-- Command not found on server (e.g., `g++` not installed)
-- Verify compiler is in PATH on server machine
-
-### File not compiling
-- Check command syntax is correct for the server's OS
-- Ensure file path in command matches the uploaded filename
-- Check compilation output for specific errors
-
-### Windows: "File path must be absolute"
-- Provide full path like `C:\Users\YourName\project\main.cpp`
-- Do NOT use relative paths on Windows client
-
+### Windows: Missing DLL when trying to run executable
+- Create `resource.rc` file in project directory
+- Paste following lines
+```bash
+#include <windows.h>
+1 24 "wx/msw/wx.manifest"
+```
+- Go to `CMakeLists.txt` and add `resource.rc` to  `add_executable` section
+```cmake
+add_executable(RCE
+        src/main.cpp
+        src/utilities/client_side.cpp
+        src/utilities/server_side.cpp
+        src/utilities/file_manager.cpp
+        resource.rc
+)
+```
+- Try to build 
 ---
 
 ## Limitations & Future Improvements
@@ -353,41 +203,11 @@ File: /path/to/test.sh
 - No authentication (assumes trusted network)
 - No persistent logging
 - 64 MB payload size limit
-
-### Planned for v2.0 (Commercial)
-- Multi-threaded server (concurrent clients)
-- TLS/SSL encryption
-- Client authentication
-- Job queue & scheduling
-- Persistent execution logs
-- Output streaming (real-time stdout)
-- Binary upload support
-- Remote shell access
-
 ---
 
 ## License
 
 This project is licensed under the **MIT License** — see [LICENSE](LICENSE) file for details.
-
----
-
-## Author
-
-**YsnBnc** — https://github.com/YsnBnc
-
----
-
-## Support & Issues
-
-Found a bug? Have a suggestion?
-
-1. Check [Issues](https://github.com/YsnBnc/rce/issues) for existing reports
-2. Open a new issue with:
-   - OS & platform (Windows/Linux/macOS)
-   - Build output & error messages
-   - Steps to reproduce
-   - Expected vs actual behavior
 
 ---
 
@@ -405,29 +225,5 @@ Found a bug? Have a suggestion?
 - Production systems without hardening
 - Systems with sensitive data
 
-For production deployments, v2.0 commercial version will include enterprise security features.
+**YsnBnc** — https://github.com/YsnBnc
 
----
-
-## Quick Start (TL;DR)
-
-```bash
-# Build
-mkdir build && cd build && cmake .. && cmake --build .
-
-# Terminal 1: Start server on port 8888
-cd release && ./RCE
-# → Click: Sides → Server Side → Enter 8888 → Click EXECUTE
-
-# Terminal 2: Send file from client
-cd release && ./RCE
-# → Click: Sides → Client Side
-# → Port: 8888, IP: localhost (or 127.0.0.1)
-# → Browse: select test.cpp
-# → Command: g++ test.cpp -o test
-# → Click: EXECUTE
-
-# Output appears in client GUI terminal
-```
-
-Enjoy! 🚀
