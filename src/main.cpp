@@ -5,6 +5,12 @@
 #include <thread>
 #include <wx/simplebook.h>  
 #include <wx/wx.h>
+#ifdef WIN32
+#include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#endif
+
 
 using namespace std;
 
@@ -95,7 +101,7 @@ public:
   }
 
 private:
-  uint32_t FILE_INDEX = 42;
+  uint32_t FILE_INDEX = next_id();
   std::string FILE_NAME;
   std::string FILE_CONTENT;
   std::string PATH_TO_FILE;
@@ -155,13 +161,11 @@ private:
                          this);
 
     // TODO: These must have clamp of some sort
-    commandInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",
-                                  wxPoint(20, 115), wxSize(155, 40));
+    commandInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",wxPoint(20, 115), wxSize(155, 40));
 
-    client_portInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "",
-                                      wxPoint(60, 20), wxSize(50, 20));
-    ipInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "", wxPoint(86, 60),
-                             wxSize(70, 20));
+    client_portInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "", wxPoint(60, 20), wxSize(50, 20));
+    ipInput = new wxTextCtrl(clientPanel, ID_CLIENT_SIDE, "", wxPoint(86, 60),wxSize(70, 20));
+
     terminalCatch(clientPanel, ID_CLIENT_SIDE);
     m_book->AddPage(clientPanel, "Client Side", true);
   }
@@ -207,8 +211,19 @@ private:
   }
   void onClientExecuteClicked(wxCommandEvent &event) {
     long temp = 0;
+
     wxString ip = ipInput->GetValue();
+    in_addr chk;
+    if(inet_pton(AF_INET, ip.mb_str(wxConvUTF8), &chk) < 1){
+      std::cerr << "Invalid IP address." << std::endl;
+      return;
+    }
     wxString port = client_portInput->GetValue();
+    int port_val;
+    if (!port.ToInt(&port_val) || port_val < 1 || port_val > 65535) {
+      std::cerr << "Invalid port value." << std::endl;
+      return;
+    }
 
     snprintf(TARGET_IP, sizeof(TARGET_IP), "%s", (const char *)ip.mb_str());
     if (port.ToLong(&temp)) {
@@ -219,17 +234,19 @@ private:
       std::this_thread::sleep_for(std::chrono::milliseconds(800));
       std::cout << "Client Side started on " << TARGET_IP << ":" << PORT
                 << std::endl;
-      client.client_side(PORT, TARGET_IP, FILE_INDEX, FILE_NAME,
-                         COMPILE_COMMAND, FILE_CONTENT);
-      // std::cout << FILE_INDEX << std::endl
-      //           << FILE_NAME << std::endl
-      //           << COMPILE_COMMAND << std::endl
-      //           << FILE_CONTENT;
+      client.client_side(PORT, TARGET_IP, FILE_INDEX, FILE_NAME,COMPILE_COMMAND, FILE_CONTENT);
     }).detach();
   }
   void onServerExecuteClicked(wxCommandEvent &event) {
     long temp = 0;
+
     wxString port = server_portInput->GetValue();
+    int port_val;
+    if (!port.ToInt(&port_val) || port_val < 1 || port_val > 65535) {
+      std::cerr << "Invalid port value." << std::endl;
+      return;
+    }
+
     if (port.ToLong(&temp)) {
       PORT = static_cast<int>(temp);
     }

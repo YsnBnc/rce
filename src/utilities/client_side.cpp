@@ -21,8 +21,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#endif
-using namespace std;
+#endif 
 
 int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
                               std::string FILE_NAME, std::string CMPL_COMMAND,
@@ -44,32 +43,31 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
   // Create socket
   client_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (client_socket < 0) {
-    cerr << "Error creating socket" << endl;
+    std::cerr << "Error creating socket" << std::endl;
   }
   server_address.sin_family = AF_INET;
   server_address.sin_port = htons(PORT);
 
   // Convert IPv4 to IPv6
   if (inet_pton(AF_INET, TARGET_IP, &server_address.sin_addr) <= 0) {
-    cerr << "Invalid address/ Address not supported \n";
+    std::cerr << "Invalid address/ Address not supported."<< std::endl;;
   }
 
-  if (connect(client_socket, (struct sockaddr *)&server_address,
-              sizeof(server_address)) < 0) {
+  if (connect(client_socket, (struct sockaddr *)&server_address,sizeof(server_address)) < 0) {
 #ifdef WIN32
+    closesocket(client_socket);
     WSACleanup();
     cerr << "Connect failed with error code: " << WSAGetLastError() << endl;
 #else
-    cerr << "Connect failed with error code: " << strerror(errno) << endl;
+    close(client_socket);
+    std::cerr << "Connect failed with error code: " << strerror(errno) << std::endl;
 #endif
   }
 
   // Manage packet content
   std::vector<uint8_t> payload = pack_file(FILE_INDEX, FILE_NAME, CMPL_COMMAND, FILE_CONTENT);
   std::cout << "Sent data: " << std::endl;
-  // for (int i = 0; i < payload.size(); i++) {
-  //   std::cout << payload[i];
-  // }
+
   WireHeader header;
   header.payload_length = htonl(static_cast<uint8_t>(payload.size()));
   header.msg_type = htons(0x0100);
@@ -78,27 +76,23 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
   std::cout << "Sent file: " << FILE_NAME << std::endl;
 
   // Recieve answer data
- if (!recv_exact(client_socket, &header, sizeof(WireHeader))) {
-    std::cerr << "Error recieving header.";
+  if (!recv_exact(client_socket, &header, sizeof(WireHeader))) {
+    std::cerr << "Error recieving header." << std::endl;
+    return 1;
   } 
-  // else {
-  //   std::cout << "Header recieved " << "msg_type: " << header.msg_type
-  //             << " payload_length:" << header.payload_length << std::endl;
-  // }
   uint32_t payload_length = ntohl(header.payload_length);
   constexpr uint32_t MAX_PAYLOAD_SIZE = 64 * 1024 * 1024;
   if (payload_length > MAX_PAYLOAD_SIZE) {
-    std::cerr << "Payload length exceed limit.";
+    std::cerr << "Payload length exceed limit."<< std::endl;;
+    return 1;
   }
 
   std::vector<uint8_t> payload_buffer(payload_length);
   if (!recv_exact(client_socket, payload_buffer.data(), payload_length)) {
-    std::cerr << "Error recieving data.";
+    std::cerr << "Error recieving data."<< std::endl;
+    return 1;
   } else {
     std::cout << "Data recieved." << std::endl;
-    // for (int i = 0; i < payload_buffer.size(); i++) {
-    //   std::cout << payload_buffer[i];
-    // }
   }
 
   size_t offset = 0;
@@ -107,7 +101,7 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
   };
   //RESPONSE_INDEX
   if (!can_read(4)) {
-    std::cerr << "Unable to read index";
+    std::cerr << "Unable to read index"<< std::endl;;
     return false;
   }
   uint32_t net_id;
@@ -118,7 +112,7 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
 
   //RESPONSE
   if (!can_read(2)) {
-    std::cerr << "Unable to get file name length.";
+    std::cerr << "Unable to get file name length."<< std::endl;;
     return false;
   }
   uint16_t net_rsp_len;
@@ -134,7 +128,7 @@ int client_class::client_side(int PORT, char TARGET_IP[16], uint32_t FILE_INDEX,
   std::cout << "Response from server:\n" << RESPONSE << std::endl;
 
 
-  // Close socket;
+// Close socket;
 #ifdef _WIN32
   closesocket(client_socket);
   WSACleanup();

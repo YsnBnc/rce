@@ -59,6 +59,11 @@ void write_file(std::string FILE_NAME, std::string FILE_CONTENT) {
   file.close();
 }
 
+uint32_t next_id(){
+  static std::atomic<uint32_t> global_counter{1};
+  return global_counter.fetch_add(1, std::memory_order_relaxed);
+}
+
 std::vector<uint8_t> pack_file(uint32_t FILE_INDEX, std::string FILE_NAME,std::string CMPL_COMMAND,std::string FILE_CONTENT) {
   std::vector<uint8_t> buffer;
   // Index
