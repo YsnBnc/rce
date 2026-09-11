@@ -217,18 +217,16 @@ This project is licensed under the **MIT License** — see [LICENSE](LICENSE) fi
 ---
 
 ## Safety & Security
+**This tool grants arbitrary code execution.** Use ONLY in:
+- Controlled development environments
+- Private networks with trusted users
+- Authorized enterprise systems
+- Proof-of-concept testing
 
-⚠️ **This tool grants arbitrary code execution.** Use ONLY in:
-- ✅ Controlled development environments
-- ✅ Private networks with trusted users
-- ✅ Authorized enterprise systems
-- ✅ Proof-of-concept testing
-
-❌ **DO NOT use** on:
+**DO NOT use** on:
 - Public internet
 - Untrusted networks
 - Production systems without hardening
 - Systems with sensitive data
 
-**YsnBnc** — https://github.com/YsnBnc
 
